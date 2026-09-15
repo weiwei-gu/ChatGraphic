@@ -4,7 +4,7 @@
 
 ChatGraphic 是 [Codely](https://codely-docs.tuanjie.cn)（AI 编程 CLI）的配套可视化工具：**对话进行中**即实时解析——方案、最终选择、任务、决策、文件变更自动长成一张导图，聊完即得图。讨论不迷路，成果可沉淀。
 
-本仓库包含：产品描述文档（`ChatGraphic产品描述*.html`）与**可运行的 POC**（`chatgraphic/`）——真实 Hook 触发、真实同链路解析、本地渲染，非脚本演示。
+本仓库包含：产品描述文档（`ChatGraphic产品描述 v0.3.html`）与**可运行的 POC**（`chatgraphic/`）——真实 Hook 触发、真实同链路解析、本地渲染，非脚本演示。
 
 ## 快速开始（POC）
 
@@ -60,7 +60,7 @@ work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 �
 ## 仓库结构
 
 ```
-├── ChatGraphic产品描述.html / v0.2 / v0.3   # 产品描述文档（内部评审演进版）
+├── ChatGraphic产品描述 v0.3.html             # 产品描述文档（最新版）
 ├── chatgraphic/                             # POC 实现（详见 chatgraphic/README.md）
 │   ├── hook.js · parser.js · parse-prompt.md · serve.js · viewer.html · config.json
 └── .codely-cli/settings.json                # AfterAgent Hook 配置
