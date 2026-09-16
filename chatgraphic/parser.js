@@ -27,6 +27,10 @@ function resolveWork(dir) {
 const WORK = resolveWork(DIR);
 const SESSROOT = path.join(WORK, 'sessions');
 const CFG = JSON.parse(fs.readFileSync(path.join(DIR, 'config.json'), 'utf8'));
+const __CFG_ORIG = JSON.parse(JSON.stringify(CFG));
+/* 测试钩子（node --test 用）：临时改写截断/上限，不动配置文件 */
+function __setConfig(patch) { Object.assign(CFG, patch); }
+function __resetConfig() { Object.assign(CFG, __CFG_ORIG); }
 
 /* ---------- 基础工具 ---------- */
 function log(...a) {
@@ -182,21 +186,29 @@ function roundBlocks(rounds, maxTurn) {
   return blocks;
 }
 function renderLean(rounds) {
+  const join = bs => bs.map(b => b.text).join('\n\n');
   let blocks = roundBlocks(rounds, CFG.maxTurnChars);
   const dropped = [];
-  let s = blocks.map(b => b.text).join('\n\n');
-  // 超限时先压缩单轮文本，再从中间略去轮次（保头 2 轮 = 目标来源，保尾部 = 最新状态）
+  let s = join(blocks);
+  // 超限收缩（分级，保头 = 目标来源，保尾 = 最新状态，极端时保尾优先）：
+  // 1) 压缩单轮文本 → 2) 略中段，保头 2 + 尾 2 → 3) 只保头 1 + 尾 2 → 4) 兜底截头保尾
   if (s.length > CFG.maxTotalLeanChars) {
-    blocks = roundBlocks(rounds, Math.max(300, Math.floor(CFG.maxTurnChars / 2)));
-    s = blocks.map(b => b.text).join('\n\n');
+    blocks = roundBlocks(rounds, Math.max(200, Math.floor(CFG.maxTurnChars / 3)));
+    s = join(blocks);
   }
-  while (s.length > CFG.maxTotalLeanChars && blocks.length > 5) {
-    const idx = Math.max(2, Math.min(blocks.length - 2, Math.floor(blocks.length / 2)));
-    dropped.push(blocks[idx].n);
-    blocks.splice(idx, 1);
-    s = blocks.map(b => b.text).join('\n\n');
+  const dropMiddle = (keepHead, keepTail) => {
+    while (s.length > CFG.maxTotalLeanChars && blocks.length > keepHead + keepTail) {
+      const idx = Math.max(keepHead, Math.min(blocks.length - keepTail - 1, Math.floor(blocks.length / 2)));
+      dropped.push(blocks[idx].n);
+      blocks.splice(idx, 1);
+      s = join(blocks);
+    }
+  };
+  dropMiddle(2, 2);
+  dropMiddle(1, 2);
+  if (s.length > CFG.maxTotalLeanChars) {
+    s = s.slice(s.length - CFG.maxTotalLeanChars) + '\n…（极端超限，已截头保尾）';
   }
-  if (s.length > CFG.maxTotalLeanChars) s = s.slice(0, CFG.maxTotalLeanChars) + '\n…（截断）';
   if (dropped.length) s += '\n\n[已略去的轮次：' + dropped.sort((a, b) => a - b).join('、') + '（内容过长省略，其余轮次完整）]';
   return s;
 }
@@ -429,4 +441,12 @@ async function main() {
     process.exit(1);
   }
 }
-main();
+if (require.main === module) main();
+
+/* ---------- 供测试与二次开发 ---------- */
+module.exports = {
+  resolveWork, resolveSessionId, loadTranscriptFromRaw, entryRole, entryParts,
+  buildRounds, roundBlocks, renderLean, viewRound,
+  buildPrompt, extractJson, normalize, writeGraph,
+  __setConfig, __resetConfig
+};

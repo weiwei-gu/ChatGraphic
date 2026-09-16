@@ -83,6 +83,7 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 | `chatgraphic/serve.js` | 零依赖本地服务：viewer / graph.json / transcript.json / version / status |
 | `chatgraphic/install.js` | 用户级 Hook 注册/移除（`--uninstall` / `--status`），扩展安装方式配套 |
 | `chatgraphic/viewer.html` | 只读导图：分层布局、生长动画、节点回链原文、拖拽缩放、导出 PNG/Markdown |
+| `chatgraphic/test/` | 22 个离线测试用例（`npm test`，node --test；不调用 codely/LLM） |
 | `chatgraphic/work/` | 运行时产物：`sessions/<会话id>/`（graph.json / transcript.json / status.json …）、`current.json`（最新会话指针）、`hook.log`（全链路日志） |
 
 ## 与 v0.3 的对齐与边界

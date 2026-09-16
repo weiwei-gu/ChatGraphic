@@ -15,7 +15,7 @@ ChatGraphic 是 [Codely](https://codely-docs.tuanjie.cn)（AI 编程 CLI）的�
 本仓库同时是一个合法的 Codely 扩展（根目录 `gemini-extension.json`）：
 
 ```bash
-# 1. 安装扩展（代码进入 ~/.codely-cli/extensions/chatgraphic/；支持 extensions update 升级）
+# 1. 安装扩展（从 GitHub 最新 Release 拉取已发布版本；代码进入 ~/.codely-cli/extensions/chatgraphic/）
 codely extensions install https://github.com/weiwei-gu/ChatGraphic
 
 # 2. 注册用户级 Hook（写入 ~/.codely-cli/settings.json，一次注册所有项目可用）
@@ -83,14 +83,28 @@ work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 �
 ```
 ├── ChatGraphic产品描述 v0.3.html             # 产品描述文档（最新版）
 ├── gemini-extension.json                    # Codely 扩展 manifest（extensions install 入口）
+├── package.json / scripts/                  # 测试与发布脚本（npm test / check-version）
+├── .github/workflows/                       # CI（测试矩阵）与 Release（tag → GitHub Release）
 ├── chatgraphic/                             # POC 实现（详见 chatgraphic/README.md）
 │   ├── hook.js · parser.js · parse-prompt.md · serve.js · viewer.html · config.json
-│   └── install.js                           # 用户级 Hook 注册/移除（扩展方式安装用）
+│   ├── install.js                           # 用户级 Hook 注册/移除（扩展方式安装用）
+│   └── test/                                # 22 个离线测试用例（node --test）
 ├── docs/index.html                           # 产品描述 v0.3 副本（GitHub Pages 发布目录）
 └── .codely-cli/settings.json                # 项目级 AfterAgent Hook 配置（方式二）
 ```
 
 > 静态发布：GitHub Settings → Pages → Branch `main` / Folder `/docs`，发布后访问 `https://weiwei-gu.github.io/ChatGraphic/`。更新文档后重新 `cp "ChatGraphic产品描述 v0.3.html" docs/index.html` 即可。
+
+## 开发、测试与发布
+
+```bash
+npm test         # 22 个用例，全离线（Node 内置 node --test，零依赖；不调用 codely/LLM）
+npm run check    # hook / parser / serve / install 四个脚本语法检查
+```
+
+- **CI**（`.github/workflows/ci.yml`）：push / PR 自动跑测试矩阵（ubuntu + macos × Node 20/24）
+- **发布**（`.github/workflows/release.yml`）：同步修改 `package.json` 与 `gemini-extension.json` 的 `version` → 提交 → `git tag vX.Y.Z && git push origin vX.Y.Z` → Actions 自动校验版本一致性（`scripts/check-version.js`）→ 跑测试 → 创建 GitHub Release
+- **安装即已发布版本**：`codely extensions install <仓库地址>` 从 GitHub `releases/latest` 解析 tag 并安装**已发布**版本（`--pre-release` 可装预发布版），不会拉取 main 分支未发布代码
 
 ## 状态与路线
 

@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 发布 GitHub Release（codely extensions install 从 releases/latest 拉取）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 版本一致性闸门（tag ↔ package.json ↔ gemini-extension.json）
+        run: npm run check-version -- "${GITHUB_REF_NAME}"
+      - name: 测试（发布前必须全绿）
+        run: npm test
+      - name: 创建 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --title "ChatGraphic ${GITHUB_REF_NAME}" --generate-notes

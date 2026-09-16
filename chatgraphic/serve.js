@@ -114,9 +114,10 @@ server.on('error', e => {
   }
 });
 server.listen(port, () => {
-  const url = 'http://localhost:' + port;
+  const actual = (server.address() && server.address().port) || port; /* --port 0 = 随机端口（测试用） */
+  const url = 'http://localhost:' + actual;
   console.log('ChatGraphic viewer → ' + url);
-  if (tries > 0) console.log('（配置端口被占用，已自动避让到 ' + port + '）');
+  if (tries > 0 && actual === port) console.log('（配置端口被占用，已自动避让到 ' + port + '）');
   console.log('提示：导图未生成时，在 Codely 里聊一轮即可；历史会话可手动补跑：');
   console.log('      node chatgraphic/parser.js --transcript <会话JSON路径>');
   if (!noOpen && process.platform === 'darwin') {

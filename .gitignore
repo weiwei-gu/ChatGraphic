@@ -4,9 +4,10 @@ chatgraphic/work/
 # 真实会话转录与导出（隐私数据，不上传）
 .codely-cli/auto-saves/
 
-# 测试沙箱（独立运行环境，不入库）
-test/
+# 根目录测试沙箱（独立运行环境，不入库；注意锚定根路径，避免误伤 chatgraphic/test/）
+/test/
 
 # 系统杂项
 .DS_Store
 *.log
+node_modules/

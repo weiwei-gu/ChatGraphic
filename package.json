@@ -1,0 +1,14 @@
+{
+  "name": "chatgraphic",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ChatGraphic —— 基于 Codely 的会话导图：每轮结束自动解析对话，方案/任务/决策/文件变更实时长成导图",
+  "scripts": {
+    "test": "node --test chatgraphic/test/*.test.js",
+    "check": "node --check chatgraphic/hook.js && node --check chatgraphic/parser.js && node --check chatgraphic/serve.js && node --check chatgraphic/install.js",
+    "check-version": "node scripts/check-version.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

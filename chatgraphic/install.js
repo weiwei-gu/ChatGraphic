@@ -18,87 +18,92 @@ const path = require('path');
 const os = require('os');
 
 const DIR = __dirname;
-const SETTINGS = path.join(os.homedir(), '.codely-cli', 'settings.json');
-const hookPath = () => path.join(DIR, 'hook.js');
-const hookCmd = () => 'node "' + hookPath() + '"';
+const DEFAULT_SETTINGS = path.join(os.homedir(), '.codely-cli', 'settings.json');
 
-function load() {
-  try { return JSON.parse(fs.readFileSync(SETTINGS, 'utf8')); }
+/* ---------- 核心逻辑（参数化，可测试） ---------- */
+const HOOK_CONFIG_KEYS = ['enabled', 'enableUI', 'disabled', 'notifications', 'maxTotalDurationPerTurn', 'mode', 'environmentSanitization'];
+
+function hookCmdOf(hookDir) { return 'node "' + path.join(hookDir, 'hook.js') + '"'; }
+function isOurs(h, hookDir) {
+  return String((h && h.command) || '').includes(path.join(hookDir, 'hook.js'));
+}
+function loadSettings(p) {
+  try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
   catch (e) { return {}; }
 }
-function save(s, backup) {
-  fs.mkdirSync(path.dirname(SETTINGS), { recursive: true });
-  if (backup && fs.existsSync(SETTINGS)) {
-    fs.writeFileSync(SETTINGS + '.chatgraphic-backup', fs.readFileSync(SETTINGS));
-  }
-  fs.writeFileSync(SETTINGS, JSON.stringify(s, null, 2) + '\n');
+function saveSettings(p, s) {
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 }
-function isOurs(h) {
-  return String((h && h.command) || '').includes(hookPath());
-}
-function findOurs(s) {
+function findOurs(s, hookDir) {
   const groups = (s.hooks && s.hooks.AfterAgent) || [];
   for (const g of groups) {
     for (const h of (g && g.hooks) || []) {
-      if (isOurs(h)) return true;
+      if (isOurs(h, hookDir)) return true;
     }
   }
   return false;
 }
 
-function install() {
-  const s = load();
+function installTo(settingsPath, hookDir) {
+  const s = loadSettings(settingsPath);
   s.hooks = s.hooks || {};
   s.hooks.enabled = true;
   s.hooks.AfterAgent = Array.isArray(s.hooks.AfterAgent) ? s.hooks.AfterAgent : [];
-  if (findOurs(s)) {
-    console.log('✓ Hook 已安装（幂等跳过）：\n  ' + hookCmd());
-    return;
+  if (findOurs(s, hookDir)) {
+    console.log('✓ Hook 已安装（幂等跳过）：\n  ' + hookCmdOf(hookDir));
+    return { changed: false };
   }
   s.hooks.AfterAgent.push({
     matcher: '',
-    hooks: [{ type: 'command', command: hookCmd(), timeout: 10000 }]
+    hooks: [{ type: 'command', command: hookCmdOf(hookDir), timeout: 10000 }]
   });
-  save(s, true);
+  if (fs.existsSync(settingsPath)) {
+    fs.writeFileSync(settingsPath + '.chatgraphic-backup', fs.readFileSync(settingsPath));
+  }
+  saveSettings(settingsPath, s);
   console.log('✓ 已注册用户级 AfterAgent Hook（一次注册，所有项目可用）：');
-  console.log('  ' + hookCmd());
-  console.log('  → 写入 ' + SETTINGS + '（原文件备份为 settings.json.chatgraphic-backup）');
+  console.log('  ' + hookCmdOf(hookDir));
+  console.log('  → 写入 ' + settingsPath + '（原文件备份为 settings.json.chatgraphic-backup）');
   console.log('注意：每个项目首次使用时，需在该项目的 Codely 会话里执行一次 /hooks trust-project');
   console.log('      （CLI 安全机制，信任指纹按项目记录，之后该项目永久生效）');
-  console.log('下一步：node ' + path.join(DIR, 'serve.js') + ' 打开导图视图，然后在任意项目里和 Codely 对话。');
+  console.log('下一步：node ' + path.join(hookDir, 'serve.js') + ' 打开导图视图，然后在任意项目里和 Codely 对话。');
+  return { changed: true };
 }
 
-function uninstall() {
-  const s = load();
-  if (!findOurs(s)) { console.log('✓ 未安装（无需移除）'); return; }
+function uninstallFrom(settingsPath, hookDir) {
+  const s = loadSettings(settingsPath);
+  if (!findOurs(s, hookDir)) { console.log('✓ 未安装（无需移除）'); return { changed: false }; }
   s.hooks.AfterAgent = s.hooks.AfterAgent
     .map(g => {
       if (!g || !Array.isArray(g.hooks)) return g;
-      g.hooks = g.hooks.filter(h => !isOurs(h));
+      g.hooks = g.hooks.filter(h => !isOurs(h, hookDir));
       return g;
     })
     .filter(g => g && (!Array.isArray(g.hooks) || g.hooks.length > 0)); // 丢弃空组
   if (s.hooks.AfterAgent.length === 0) delete s.hooks.AfterAgent;
   // 若 hooks 下已无任何事件配置，整体还原（移除我们引入的空壳）
-  const eventKeys = Object.keys(s.hooks).filter(k => !['enabled', 'enableUI', 'disabled', 'notifications', 'maxTotalDurationPerTurn', 'mode', 'environmentSanitization'].includes(k));
+  const eventKeys = Object.keys(s.hooks).filter(k => !HOOK_CONFIG_KEYS.includes(k));
   if (eventKeys.length === 0) delete s.hooks;
-  save(s, false);
-  console.log('✓ 已移除 ChatGraphic Hook（' + SETTINGS + '）');
+  saveSettings(settingsPath, s);
+  console.log('✓ 已移除 ChatGraphic Hook（' + settingsPath + '）');
+  return { changed: true };
 }
 
-function status() {
-  const s = load();
-  const installed = findOurs(s);
+function statusOf(settingsPath, hookDir) {
+  const s = loadSettings(settingsPath);
+  const installed = findOurs(s, hookDir);
   console.log(installed ? '✓ 已安装：' : '✗ 未安装');
-  if (installed) console.log('  ' + hookCmd());
-  console.log('  数据目录：' + (process.env.CHATGRAPHIC_HOME
-    ? path.join(process.env.CHATGRAPHIC_HOME, 'work')
-    : (DIR.startsWith(path.join(os.homedir(), '.codely-cli', 'extensions') + path.sep)
-      ? path.join(os.homedir(), '.chatgraphic')
-      : path.join(DIR, 'work'))));
+  if (installed) console.log('  ' + hookCmdOf(hookDir));
+  return { installed };
 }
 
-const arg = process.argv[2] || '';
-if (arg === '--uninstall') uninstall();
-else if (arg === '--status') status();
-else install();
+/* ---------- CLI 入口 ---------- */
+if (require.main === module) {
+  const arg = process.argv[2] || '';
+  if (arg === '--uninstall') uninstallFrom(DEFAULT_SETTINGS, DIR);
+  else if (arg === '--status') statusOf(DEFAULT_SETTINGS, DIR);
+  else installTo(DEFAULT_SETTINGS, DIR);
+}
+
+module.exports = { installTo, uninstallFrom, statusOf, findOurs, hookCmdOf };
