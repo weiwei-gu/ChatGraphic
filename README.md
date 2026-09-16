@@ -4,111 +4,42 @@
 
 ChatGraphic 是 [Codely](https://codely-docs.tuanjie.cn)（AI 编程 CLI）的配套可视化工具：**对话进行中**即实时解析——方案、最终选择、任务、决策、文件变更自动长成一张导图，聊完即得图。讨论不迷路，成果可沉淀。
 
-本仓库包含：产品描述文档（`ChatGraphic产品描述 v0.3.html`）与**可运行的 POC**（`chatgraphic/`）——真实 Hook 触发、真实同链路解析、本地渲染，非脚本演示。
-
-## 安装与使用
-
-前置：本机已安装并登录 `codely` CLI（解析通过 `codely -p` 复用同一模型链路）。
-
-### 方式一：Codely 扩展安装（推荐）
-
-本仓库同时是一个合法的 Codely 扩展（根目录 `gemini-extension.json`）：
+- 在线产品页：<https://weiwei-gu.github.io/ChatGraphic/>（产品描述 v0.3 静态发布）
+- 快速开始：
 
 ```bash
-# 1. 安装扩展（从 GitHub 最新 Release 拉取已发布版本；代码进入 ~/.codely-cli/extensions/chatgraphic/）
-codely extensions install https://github.com/weiwei-gu/ChatGraphic
-
-# 2. 注册用户级 Hook（写入 ~/.codely-cli/settings.json，一次注册所有项目可用）
-node ~/.codely-cli/extensions/chatgraphic/chatgraphic/install.js
-
-# 3. 打开导图视图
-node ~/.codely-cli/extensions/chatgraphic/chatgraphic/serve.js
+codely extensions install https://github.com/weiwei-gu/ChatGraphic    # 从最新 Release 安装
+node ~/.codely-cli/extensions/chatgraphic/chatgraphic/install.js     # 注册用户级 Hook
 ```
 
-每个项目**首次使用**时，在该项目的 Codely 会话里执行一次 `/hooks trust-project`（CLI 安全机制：Hook 信任指纹按项目记录于 `~/.codely-cli/trusted_hooks.json`）。扩展安装态的导图数据存于 `~/.chatgraphic/`，不受扩展升级影响。
+安装与使用细节（克隆方式、按项目信任、数据目录、成本控制）见 **[docs/guide.md](docs/guide.md)**。
 
-> 移除：`node .../install.js --uninstall` + `codely extensions uninstall chatgraphic`。
-> 注：Codely 1.0.0-rc.60 的扩展 manifest 尚不注册 hooks 字段（已实测），Hook 注册由 install.js 完成。
-
-### 方式二：克隆仓库（与方式一等效，仅代码位置不同）
-
-```bash
-git clone git@github.com:weiwei-gu/ChatGraphic.git
-cd ChatGraphic
-node chatgraphic/install.js     # 同样注册用户级 Hook（指向本克隆目录）
-node chatgraphic/serve.js       # 启动导图视图（自动打开 http://localhost:4830）
-```
-
-每个项目首次使用时，在该项目的 Codely 会话里执行一次 `/hooks trust-project`。之后每轮结束，导图自动生长（实测单轮出图约 8~15 秒，不阻塞对话）。
-
-> 历史说明：仓库曾内置项目级 Hook（`.codely-cli/settings.json`），现已统一为 `install.js` 的用户级注册，避免与扩展方式双重触发；克隆用户与扩展用户走同一注册机制。
-
-历史会话复盘：`node chatgraphic/parser.js --transcript <会话JSON路径>`
-
-## 架构（对齐产品描述 v0.3「Hook 驱动、同链路同边界」）
+## 目录介绍
 
 ```
-你在本项目里与 Codely 对话
-   │  每轮结束（AfterAgent Hook，由 install.js 注册于 ~/.codely-cli/settings.json）
-   ▼
-chatgraphic/hook.js            ← 毫秒级退出不阻塞对话；转录去重；本会话旧解析最新胜出
-   │  异步派发（detached）
-   ▼
-chatgraphic/parser.js          ← 转录精简 → spawn codely -p（同一模型链路/认证，独占临时目录）
-   ▼
-work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 → 版本递增
-   │  serve.js（本地只读服务，2s 轮询）
-   ▼
-浏览器 viewer                  ← 导图实时生长 / 会话列表切换 / 节点回链对话原文 / 导出 PNG、Markdown
+├── ChatGraphic产品描述 v0.3.html   产品描述文档（最新版，本项目的需求源头）
+├── gemini-extension.json          Codely 扩展 manifest（extensions install 入口）
+├── package.json / scripts/        测试与发布脚本（npm test / 版本一致性校验）
+├── .github/workflows/             CI（测试矩阵）与 Release（tag → GitHub Release）
+├── chatgraphic/                   POC 实现（组件细节见 chatgraphic/README.md）
+│   ├── hook.js                    AfterAgent 触发器：去重 / 取代旧解析 / 秒级退出
+│   ├── parser.js                  解析 worker：转录精简 → codely -p 同链路解析 → graph.json
+│   ├── parse-prompt.md            解析提示词：分型 + 三问准入 + 置信分级
+│   ├── serve.js / viewer.html     本地只读视图服务与导图界面（生长动画 / 回链原文 / 导出）
+│   ├── install.js                 用户级 Hook 注册 / 移除
+│   ├── config.json                开关 / 解析模型 / 端口 / 截断上限
+│   └── test/                      22 个离线测试用例（node --test，零依赖）
+└── docs/                          产品页发布副本（index.html = GitHub Pages）+ 详细文档
+    ├── guide.md                   安装与使用指南
+    ├── architecture.md            架构、组件职责与设计要点
+    └── development.md             开发、测试与发布流程
 ```
 
-| 组件 | 职责 |
+## 文档索引
+
+| 文档 | 内容 |
 |---|---|
-| `hook.js` | AfterAgent 触发器：防递归 / sha1 去重 / 取代未完成旧解析，会话级隔离 |
-| `parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL 容错）→ 精简 → 同链路解析 → graph.json |
-| `parse-prompt.md` | 解析提示词：分型 + 三问准入 + 置信分级 + 严格 JSON schema + 上一版 id 稳定性 |
-| `serve.js` | 零依赖本地服务（端口占用自动避让），多会话路由 |
-| `viewer.html` | 只读导图：分层布局、生长动画、多会话切换、节点回链、导出 PNG/Markdown |
-| `.codely-cli/settings.json` | 项目级 AfterAgent Hook 配置（首次使用需信任） |
-
-## 设计要点
-
-- **轮次级实时**：AfterAgent（每轮 Agent 结束）触发全量重解析——MVP 简单可靠，秒级增量是 Phase 2
-- **同链路同边界**：解析即 `codely -p`，与对话同一模型、同一认证、同一数据边界；渲染、存储、导出全程本地
-- **三问准入 / 置信分级**：内容须是可执行任务 / 可复用决策 / 可追溯变更才上图；低置信进「待确认」
-- **证据优先**：任务状态由文件变更、命令执行等真实证据驱动，语义推断会标注来源
-- **多窗口 / 多项目共存**：每会话独立 `work/sessions/<id>/`，serve 端口自动避让
-- **一键关闭**：`chatgraphic/config.json` 中 `enabled: false`，Hook 立即静默跳过
-
-## 仓库结构
-
-```
-├── ChatGraphic产品描述 v0.3.html             # 产品描述文档（最新版）
-├── gemini-extension.json                    # Codely 扩展 manifest（extensions install 入口）
-├── package.json / scripts/                  # 测试与发布脚本（npm test / check-version）
-├── .github/workflows/                       # CI（测试矩阵）与 Release（tag → GitHub Release）
-├── chatgraphic/                             # POC 实现（详见 chatgraphic/README.md）
-│   ├── hook.js · parser.js · parse-prompt.md · serve.js · viewer.html · config.json
-│   ├── install.js                           # 用户级 Hook 注册/移除（扩展方式安装用）
-│   └── test/                                # 22 个离线测试用例（node --test）
-├── docs/index.html                           # 产品描述 v0.3 副本（GitHub Pages 发布目录）
-└── （项目级 Hook 配置已移除，统一由 chatgraphic/install.js 注册用户级 Hook）
-```
-
-> 静态发布：GitHub Settings → Pages → Branch `main` / Folder `/docs`，发布后访问 `https://weiwei-gu.github.io/ChatGraphic/`。更新文档后重新 `cp "ChatGraphic产品描述 v0.3.html" docs/index.html` 即可。
-
-## 开发、测试与发布
-
-```bash
-npm test         # 22 个用例，全离线（Node 内置 node --test，零依赖；不调用 codely/LLM）
-npm run check    # hook / parser / serve / install 四个脚本语法检查
-```
-
-- **CI**（`.github/workflows/ci.yml`）：push / PR 自动跑测试矩阵（ubuntu + macos × Node 20/24）
-- **发布**（`.github/workflows/release.yml`）：同步修改 `package.json` 与 `gemini-extension.json` 的 `version` → 提交 → `git tag vX.Y.Z && git push origin vX.Y.Z` → Actions 自动校验版本一致性（`scripts/check-version.js`）→ 跑测试 → 创建 GitHub Release
-- **安装即已发布版本**：`codely extensions install <仓库地址>` 从 GitHub `releases/latest` 解析 tag 并安装**已发布**版本（`--pre-release` 可装预发布版），不会拉取 main 分支未发布代码
-
-## 状态与路线
-
-POC 已端到端验证：真实会话 → Hook 自动触发 → 同链路解析出图；多窗口并行隔离；导出 PNG/Markdown。
-Phase 2+（见产品描述 v0.3）：秒级增量解析（滚动窗口 + 图状态摘要）、节点编辑、版本快照回退、多会话合并、团队分享。
+| [docs/guide.md](docs/guide.md) | 扩展 / 克隆两种安装方式、信任机制、日常使用与复盘 |
+| [docs/architecture.md](docs/architecture.md) | 数据流架构、组件职责、设计要点（三问准入 / 同链路同边界）、路线 |
+| [docs/development.md](docs/development.md) | 测试、CI/CD、发版流程、GitHub Pages 静态发布 |
+| [chatgraphic/README.md](chatgraphic/README.md) | POC 组件细节、成本与控制、故障排查 |
