@@ -20,6 +20,7 @@ node .codely-cli/extensions/chatgraphic/chatgraphic/serve.js
 说明：
 
 - **作用域**：`--scope workspace` 装入本项目（项目级依赖，随项目走）；不加则默认装入 `~/.codely-cli/extensions/`（用户级，全局共享一份）。两种作用域下导图数据都存于 `~/.chatgraphic/`（`CHATGRAPHIC_HOME` 可覆盖），不受扩展升级影响。
+- **命令写法**：项目级注册写入 `$CODELY_PROJECT_DIR` 锚定的可移植命令（Codely 在 hook 执行时展开，跨机器/跨克隆位置通用）；用户级注册为本机绝对路径；旧版绝对路径写法仍被识别与兼容
 - **关于安装目录里的 `.git`**：codely 的扩展安装基于 git clone（按 Release tag 检出），`.git` 是 `codely extensions update` 进行升级的机制基础，属安装器正常行为。workspace 作用域下它位于 `<项目>/.codely-cli/extensions/chatgraphic/.git`——请确保项目 `.gitignore` 包含 `.codely-cli/extensions/`（本仓库已内置），避免嵌套仓库进版本库。
 - 每个项目**首次使用**时，在该项目的 Codely 会话里执行一次 `/hooks trust-project`（CLI 安全机制：Hook 信任指纹按项目记录于 `~/.codely-cli/trusted_hooks.json`）。
 - **移除**：`node .codely-cli/extensions/chatgraphic/chatgraphic/install.js --uninstall` + `codely extensions uninstall chatgraphic --scope workspace`（用户作用域安装则省略 `--scope workspace`）。

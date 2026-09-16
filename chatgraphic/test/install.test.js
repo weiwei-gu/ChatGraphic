@@ -7,42 +7,67 @@ const os = require('os');
 const path = require('path');
 const I = require('../install.js');
 
-const HOOK_DIR = path.join(__dirname, '..');
-function mkSettingsPath() {
-  return path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cg-inst-')), 'settings.json');
+const USER_SETTINGS = path.join(os.homedir(), '.codely-cli', 'settings.json');
+
+/** 造一个虚拟项目：<root>/proj/.codely-cli/extensions/chatgraphic/chatgraphic（hookDir 仅做路径运算，无需真实文件） */
+function mkProject() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-proj-'));
+  const projectRoot = path.join(root, 'proj');
+  const hookDir = path.join(projectRoot, '.codely-cli', 'extensions', 'chatgraphic', 'chatgraphic');
+  const settings = path.join(projectRoot, '.codely-cli', 'settings.json');
+  return { root, projectRoot, hookDir, settings };
 }
 const read = p => JSON.parse(fs.readFileSync(p, 'utf8'));
 
-test('全新安装 → 幂等 → 卸载后完全还原（无 hooks 残留）', () => {
-  const sp = mkSettingsPath();
-  const r1 = I.installTo(sp, HOOK_DIR);
+test('项目级注册：写入 $CODELY_PROJECT_DIR 可移植命令；幂等；卸载完全还原', () => {
+  const { hookDir, settings, projectRoot } = mkProject();
+  const r1 = I.installTo(settings, hookDir);
   assert.strictEqual(r1.changed, true);
-  let s = read(sp);
-  assert.strictEqual(s.hooks.enabled, true);
-  assert.strictEqual(s.hooks.AfterAgent.length, 1);
-  assert.ok(s.hooks.AfterAgent[0].hooks[0].command.includes(path.join(HOOK_DIR, 'hook.js')));
+  assert.strictEqual(r1.scope, '项目级');
+  const s1 = read(settings);
+  const expected = 'node "$CODELY_PROJECT_DIR/' + path.relative(projectRoot, path.join(hookDir, 'hook.js')) + '"';
+  assert.strictEqual(s1.hooks.AfterAgent[0].hooks[0].command, expected, '项目级应为项目根锚定的可移植命令');
 
-  const r2 = I.installTo(sp, HOOK_DIR); // 幂等
-  assert.strictEqual(r2.changed, false);
-  assert.strictEqual(read(sp).hooks.AfterAgent.length, 1);
+  const r2 = I.installTo(settings, hookDir);
+  assert.strictEqual(r2.changed, false, '幂等跳过');
+  assert.strictEqual(read(settings).hooks.AfterAgent[0].hooks.length, 1);
 
-  const r3 = I.uninstallFrom(sp, HOOK_DIR);
-  assert.strictEqual(r3.changed, true);
-  s = read(sp);
-  assert.strictEqual(s.hooks, undefined, 'hooks 空壳应整体还原');
+  I.uninstallFrom(settings, hookDir);
+  assert.strictEqual(read(settings).hooks, undefined, 'hooks 空壳应整体还原');
+});
+
+test('hookCmdOf：用户级用绝对路径，项目级用 $CODELY_PROJECT_DIR（纯函数，不写文件）', () => {
+  assert.strictEqual(I.hookCmdOf(USER_SETTINGS, '/x/chatgraphic'), 'node "/x/chatgraphic/hook.js"');
+  assert.strictEqual(
+    I.hookCmdOf('/x/proj/.codely-cli/settings.json', '/x/proj/.codely-cli/extensions/chatgraphic/chatgraphic'),
+    'node "$CODELY_PROJECT_DIR/.codely-cli/extensions/chatgraphic/chatgraphic/hook.js"'
+  );
+});
+
+test('兼容旧版绝对路径写法：识别、不重复注册、可卸载', () => {
+  const { hookDir, settings } = mkProject();
+  fs.mkdirSync(path.dirname(settings), { recursive: true });
+  fs.writeFileSync(settings, JSON.stringify({
+    hooks: { enabled: true, AfterAgent: [{ matcher: '', hooks: [{ type: 'command', command: 'node "' + path.join(hookDir, 'hook.js') + '"' }] }] }
+  }));
+  const r = I.installTo(settings, hookDir);
+  assert.strictEqual(r.changed, false, '旧绝对路径写法应被识别为已安装');
+  assert.strictEqual(read(settings).hooks.AfterAgent[0].hooks.length, 1, '不得重复注册');
+  I.uninstallFrom(settings, hookDir);
+  assert.strictEqual(read(settings).hooks, undefined);
 });
 
 test('保留已有 hooks 配置与他人 Hook、无关顶层键', () => {
-  const sp = mkSettingsPath();
-  fs.writeFileSync(sp, JSON.stringify({
+  const { hookDir, settings } = mkProject();
+  fs.mkdirSync(path.dirname(settings), { recursive: true });
+  fs.writeFileSync(settings, JSON.stringify({
     unityInsight: { enabled: true },
     hooks: { enabled: true, AfterAgent: [{ matcher: 'x', hooks: [{ type: 'command', command: 'node other.js' }] }] }
   }));
-  I.installTo(sp, HOOK_DIR);
-  assert.strictEqual(read(sp).hooks.AfterAgent.length, 2, '应追加而非覆盖');
-
-  I.uninstallFrom(sp, HOOK_DIR);
-  const s = read(sp);
+  I.installTo(settings, hookDir);
+  assert.strictEqual(read(settings).hooks.AfterAgent.length, 2, '应追加而非覆盖');
+  I.uninstallFrom(settings, hookDir);
+  const s = read(settings);
   assert.strictEqual(s.hooks.AfterAgent.length, 1, '只移除自己的条目');
   assert.strictEqual(s.hooks.AfterAgent[0].hooks[0].command, 'node other.js', '他人 Hook 不受影响');
   assert.strictEqual(s.hooks.enabled, true, 'hooks 配置键保留');
@@ -50,19 +75,21 @@ test('保留已有 hooks 配置与他人 Hook、无关顶层键', () => {
 });
 
 test('未安装时卸载为 no-op（不创建文件）', () => {
-  const sp = mkSettingsPath();
-  const r = I.uninstallFrom(sp, HOOK_DIR);
+  const { hookDir, settings } = mkProject();
+  const r = I.uninstallFrom(settings, hookDir);
   assert.strictEqual(r.changed, false);
-  assert.ok(!fs.existsSync(sp), '未安装时不得创建 settings 文件');
+  assert.ok(!fs.existsSync(settings), '未安装时不得创建 settings 文件');
 });
 
-test('statusOf 报告安装状态', () => {
-  const sp = mkSettingsPath();
-  assert.strictEqual(I.statusOf(sp, HOOK_DIR).installed, false);
-  I.installTo(sp, HOOK_DIR);
-  assert.strictEqual(I.statusOf(sp, HOOK_DIR).installed, true);
-  I.uninstallFrom(sp, HOOK_DIR);
-  assert.strictEqual(I.statusOf(sp, HOOK_DIR).installed, false);
+test('statusOf 报告安装状态与作用域', () => {
+  const { hookDir, settings } = mkProject();
+  assert.strictEqual(I.statusOf(settings, hookDir).installed, false);
+  I.installTo(settings, hookDir);
+  const st = I.statusOf(settings, hookDir);
+  assert.strictEqual(st.installed, true);
+  assert.strictEqual(st.scope, '项目级');
+  I.uninstallFrom(settings, hookDir);
+  assert.strictEqual(I.statusOf(settings, hookDir).installed, false);
 });
 
 /* ---------- 注册位置解析（作用域跟随安装位置） ---------- */
@@ -70,7 +97,7 @@ test('resolveSettingsPath：workspace 作用域 → 项目级；用户作用域 
   const ws = '/Users/dev/MyProject/.codely-cli/extensions/chatgraphic/chatgraphic';
   const us = path.join(os.homedir(), '.codely-cli', 'extensions', 'chatgraphic', 'chatgraphic');
   assert.strictEqual(I.resolveSettingsPath(ws), '/Users/dev/MyProject/.codely-cli/settings.json', 'workspace → 项目 settings');
-  assert.strictEqual(I.resolveSettingsPath(us), path.join(os.homedir(), '.codely-cli', 'settings.json'), '用户作用域 → 用户 settings');
+  assert.strictEqual(I.resolveSettingsPath(us), USER_SETTINGS, '用户作用域 → 用户 settings');
 });
 
 test('resolveSettingsPath：普通克隆向上找项目；无项目则兜底用户级', () => {
@@ -86,32 +113,26 @@ test('resolveSettingsPath：普通克隆向上找项目；无项目则兜底用�
   fs.mkdirSync(path.join(orphan, 'chatgraphic'), { recursive: true });
   assert.strictEqual(
     I.resolveSettingsPath(path.join(orphan, 'chatgraphic')),
-    path.join(os.homedir(), '.codely-cli', 'settings.json'),
-    '无项目结构 → 兜底用户级'
+    USER_SETTINGS,
+    '无项目结构 → 兜底用户级（tmp 顶层止损）'
   );
 });
 
+/* ---------- 双注册冲突告警 ---------- */
 test('conflictWarning：项目级注册时检测用户级的另一份注册（参数化，不碰真机配置）', () => {
-  const projSettings = path.join(mkSettingsDirOnly(), 'settings.json'); // 任意非用户级路径
-  const userSim = path.join(mkSettingsDirOnly(), 'settings.json');
+  const projSettings = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cg-scope-')), 'settings.json');
+  const userSim = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cg-scope-')), 'settings.json');
+  const hookDir = '/another/proj/chatgraphic';
   const otherDir = '/somewhere/other-chatgraphic';
   fs.writeFileSync(userSim, JSON.stringify({
     hooks: { AfterAgent: [{ matcher: '', hooks: [{ type: 'command', command: 'node "' + otherDir + '/hook.js"' }] }] }
   }));
-  const w = I.conflictWarning(projSettings, HOOK_DIR, userSim);
+  const w = I.conflictWarning(projSettings, hookDir, userSim);
   assert.ok(w && w.includes('另一份'), '存在指向其他目录的注册时应告警');
 
-  // 指向自身 → 不告警
   fs.writeFileSync(userSim, JSON.stringify({
-    hooks: { AfterAgent: [{ matcher: '', hooks: [{ type: 'command', command: I.hookCmdOf(HOOK_DIR) }] }] }
+    hooks: { AfterAgent: [{ matcher: '', hooks: [{ type: 'command', command: 'node "' + hookDir + '/hook.js"' }] }] }
   }));
-  assert.strictEqual(I.conflictWarning(projSettings, HOOK_DIR, userSim), null, '指向同一 hook.js 时不应告警');
-
-  // 用户级注册 → 永不告警
-  assert.strictEqual(I.conflictWarning(userSim, HOOK_DIR, userSim), null, '用户级注册不检查冲突');
+  assert.strictEqual(I.conflictWarning(projSettings, hookDir, userSim), null, '指向同一 hook.js 时不应告警');
+  assert.strictEqual(I.conflictWarning(userSim, hookDir, userSim), null, '注册到用户级文件时不自检冲突');
 });
-
-/** 只建目录不建文件（settings 路径必须不存在，避免被当作用户级） */
-function mkSettingsDirOnly() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'cg-scope-'));
-}

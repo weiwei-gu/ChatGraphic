@@ -14,6 +14,12 @@
  *   普通克隆：向上查找含 .codely-cli 目录的最近项目 → 该项目 settings.json（本地文件，勿入库）
  *   兜底：~/.codely-cli/settings.json
  *
+ * 命令写法：
+ *   项目级 → node "$CODELY_PROJECT_DIR/<hook.js 相对项目根路径>"（Codely 官方占位符，
+ *            hook 执行时展开，跨机器/跨克隆位置可移植）
+ *   用户级 → node "<绝对路径>"（本机文件，无官方 home 占位符）
+ *   兼容：旧版绝对路径写法仍被识别（不重复注册、卸载可清理）。
+ *
  * 每个项目首次使用时需在 Codely 里执行一次 /hooks trust-project（CLI 安全信任机制，
  * 按项目记录指纹于 ~/.codely-cli/trusted_hooks.json）。
  * 注：Codely 1.0.0-rc.60 的扩展 manifest 尚不注册 hooks 字段（文档与实现存在差异，
@@ -50,16 +56,33 @@ function resolveSettingsPath(hookDir) {
   // 3) 兜底：用户级
   return USER_SETTINGS;
 }
-function scopeLabel(settingsPath) {
-  return path.resolve(settingsPath) === path.resolve(USER_SETTINGS) ? '用户级' : '项目级';
-}
+function isUserSettings(p) { return path.resolve(p) === path.resolve(USER_SETTINGS); }
+function scopeLabel(p) { return isUserSettings(p) ? '用户级' : '项目级'; }
+function projectRootOf(settingsPath) { return path.dirname(path.dirname(path.resolve(settingsPath))); }
 
 /* ---------- 核心逻辑（参数化，可测试） ---------- */
 const HOOK_CONFIG_KEYS = ['enabled', 'enableUI', 'disabled', 'notifications', 'maxTotalDurationPerTurn', 'mode', 'environmentSanitization'];
 
-function hookCmdOf(hookDir) { return 'node "' + path.join(hookDir, 'hook.js') + '"'; }
-function isOurs(h, hookDir) {
-  return String((h && h.command) || '').includes(path.join(hookDir, 'hook.js'));
+function hookCmdOf(settingsPath, hookDir) {
+  const hookPath = path.join(hookDir, 'hook.js');
+  if (isUserSettings(settingsPath)) return 'node "' + hookPath + '"'; // 用户级：本机绝对路径
+  // 项目级：$CODELY_PROJECT_DIR 锚定（hook 执行时由 Codely 展开，跨机器可移植）
+  const rel = path.relative(projectRootOf(settingsPath), hookPath);
+  return 'node "$CODELY_PROJECT_DIR/' + rel + '"';
+}
+/* 命中判定：绝对路径形式（旧版兼容）或 $CODELY_PROJECT_DIR 展开后指向同一 hook.js */
+function isOurs(h, hookDir, settingsPath) {
+  return !!findOursCmd(h, hookDir, settingsPath);
+}
+function findOursCmd(h, hookDir, settingsPath) {
+  const cmd = String((h && h.command) || '');
+  if (!cmd.includes('hook.js')) return null;
+  if (cmd.includes(path.join(hookDir, 'hook.js'))) return cmd; // 旧版绝对路径形式
+  if (settingsPath && !isUserSettings(settingsPath) && cmd.includes('$CODELY_PROJECT_DIR')) {
+    const expanded = cmd.split('$CODELY_PROJECT_DIR').join(projectRootOf(settingsPath));
+    if (expanded.includes(path.join(hookDir, 'hook.js'))) return cmd;
+  }
+  return null;
 }
 function loadSettings(p) {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
@@ -69,14 +92,15 @@ function saveSettings(p, s) {
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 }
-function findOurs(s, hookDir) {
+function findOurs(s, hookDir, settingsPath) {
   const groups = (s.hooks && s.hooks.AfterAgent) || [];
   for (const g of groups) {
     for (const h of (g && g.hooks) || []) {
-      if (isOurs(h, hookDir)) return true;
+      const cmd = findOursCmd(h, hookDir, settingsPath);
+      if (cmd) return cmd;
     }
   }
-  return false;
+  return null;
 }
 
 function installTo(settingsPath, hookDir) {
@@ -85,31 +109,33 @@ function installTo(settingsPath, hookDir) {
   s.hooks = s.hooks || {};
   s.hooks.enabled = true;
   s.hooks.AfterAgent = Array.isArray(s.hooks.AfterAgent) ? s.hooks.AfterAgent : [];
-  if (findOurs(s, hookDir)) {
-    console.log('✓ Hook 已安装（幂等跳过，' + scope + '）：\n  ' + hookCmdOf(hookDir));
+  const existing = findOurs(s, hookDir, settingsPath);
+  if (existing) {
+    console.log('✓ Hook 已安装（幂等跳过，' + scope + '）：\n  ' + existing);
     return { changed: false, scope };
   }
+  const cmd = hookCmdOf(settingsPath, hookDir);
   s.hooks.AfterAgent.push({
     matcher: '',
-    hooks: [{ type: 'command', command: hookCmdOf(hookDir), timeout: 10000 }]
+    hooks: [{ type: 'command', command: cmd, timeout: 10000 }]
   });
   if (fs.existsSync(settingsPath)) {
     fs.writeFileSync(settingsPath + '.chatgraphic-backup', fs.readFileSync(settingsPath));
   }
   saveSettings(settingsPath, s);
   console.log('✓ 已注册 AfterAgent Hook（' + scope + (scope === '用户级' ? '，一次注册所有项目可用' : '，仅本项目生效') + '）：');
-  console.log('  ' + hookCmdOf(hookDir));
+  console.log('  ' + cmd);
   console.log('  → 写入 ' + settingsPath + (fs.existsSync(settingsPath + '.chatgraphic-backup') ? '（原文件备份为 *.chatgraphic-backup）' : ''));
   return { changed: true, scope };
 }
 
 function uninstallFrom(settingsPath, hookDir) {
   const s = loadSettings(settingsPath);
-  if (!findOurs(s, hookDir)) { console.log('✓ 未安装（无需移除，' + scopeLabel(settingsPath) + '）'); return { changed: false }; }
+  if (!findOurs(s, hookDir, settingsPath)) { console.log('✓ 未安装（无需移除，' + scopeLabel(settingsPath) + '）'); return { changed: false }; }
   s.hooks.AfterAgent = s.hooks.AfterAgent
     .map(g => {
       if (!g || !Array.isArray(g.hooks)) return g;
-      g.hooks = g.hooks.filter(h => !isOurs(h, hookDir));
+      g.hooks = g.hooks.filter(h => !findOursCmd(h, hookDir, settingsPath));
       return g;
     })
     .filter(g => g && (!Array.isArray(g.hooks) || g.hooks.length > 0)); // 丢弃空组
@@ -124,12 +150,12 @@ function uninstallFrom(settingsPath, hookDir) {
 
 function statusOf(settingsPath, hookDir) {
   const s = loadSettings(settingsPath);
-  const installed = findOurs(s, hookDir);
+  const stored = findOurs(s, hookDir, settingsPath);
   const scope = scopeLabel(settingsPath);
-  console.log((installed ? '✓ 已安装' : '✗ 未安装') + '（' + scope + '）');
+  console.log((stored ? '✓ 已安装' : '✗ 未安装') + '（' + scope + '）');
   console.log('  注册文件：' + settingsPath);
-  if (installed) console.log('  ' + hookCmdOf(hookDir));
-  return { installed, scope };
+  if (stored) console.log('  ' + stored); // 显示实际存储的命令（兼容旧写法如实呈现）
+  return { installed: !!stored, scope };
 }
 
 /* ---------- 双注册冲突告警：项目级注册时检查用户级是否另有 ChatGraphic Hook ---------- */
@@ -168,4 +194,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { installTo, uninstallFrom, statusOf, findOurs, hookCmdOf, resolveSettingsPath, conflictWarning };
+module.exports = { installTo, uninstallFrom, statusOf, findOurs, isOurs, hookCmdOf, resolveSettingsPath, conflictWarning };
