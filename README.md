@@ -30,16 +30,18 @@ node ~/.codely-cli/extensions/chatgraphic/chatgraphic/serve.js
 > 移除：`node .../install.js --uninstall` + `codely extensions uninstall chatgraphic`。
 > 注：Codely 1.0.0-rc.60 的扩展 manifest 尚不注册 hooks 字段（已实测），Hook 注册由 install.js 完成。
 
-### 方式二：克隆仓库（项目级 Hook）
+### 方式二：克隆仓库（与方式一等效，仅代码位置不同）
 
 ```bash
 git clone git@github.com:weiwei-gu/ChatGraphic.git
 cd ChatGraphic
-node chatgraphic/serve.js      # 启动导图视图（自动打开 http://localhost:4830）
-# 在本仓库目录里启动 Codely 正常对话；首次需信任项目 Hook：/hooks trust-project
+node chatgraphic/install.js     # 同样注册用户级 Hook（指向本克隆目录）
+node chatgraphic/serve.js       # 启动导图视图（自动打开 http://localhost:4830）
 ```
 
-之后每轮结束，导图自动生长（实测单轮出图约 8~15 秒，不阻塞对话）。两种方式请只启用一种；若并存，Hook 的转录去重会自动避免重复解析，但建议保持单一来源。
+每个项目首次使用时，在该项目的 Codely 会话里执行一次 `/hooks trust-project`。之后每轮结束，导图自动生长（实测单轮出图约 8~15 秒，不阻塞对话）。
+
+> 历史说明：仓库曾内置项目级 Hook（`.codely-cli/settings.json`），现已统一为 `install.js` 的用户级注册，避免与扩展方式双重触发；克隆用户与扩展用户走同一注册机制。
 
 历史会话复盘：`node chatgraphic/parser.js --transcript <会话JSON路径>`
 
@@ -47,7 +49,7 @@ node chatgraphic/serve.js      # 启动导图视图（自动打开 http://localh
 
 ```
 你在本项目里与 Codely 对话
-   │  每轮结束（AfterAgent Hook，配置于 .codely-cli/settings.json）
+   │  每轮结束（AfterAgent Hook，由 install.js 注册于 ~/.codely-cli/settings.json）
    ▼
 chatgraphic/hook.js            ← 毫秒级退出不阻塞对话；转录去重；本会话旧解析最新胜出
    │  异步派发（detached）
@@ -90,7 +92,7 @@ work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 �
 │   ├── install.js                           # 用户级 Hook 注册/移除（扩展方式安装用）
 │   └── test/                                # 22 个离线测试用例（node --test）
 ├── docs/index.html                           # 产品描述 v0.3 副本（GitHub Pages 发布目录）
-└── .codely-cli/settings.json                # 项目级 AfterAgent Hook 配置（方式二）
+└── （项目级 Hook 配置已移除，统一由 chatgraphic/install.js 注册用户级 Hook）
 ```
 
 > 静态发布：GitHub Settings → Pages → Branch `main` / Folder `/docs`，发布后访问 `https://weiwei-gu.github.io/ChatGraphic/`。更新文档后重新 `cp "ChatGraphic产品描述 v0.3.html" docs/index.html` 即可。

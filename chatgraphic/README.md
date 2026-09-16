@@ -7,7 +7,7 @@
 
 ```
 你在本项目里与 Codely 对话
-   │  每轮结束（AfterAgent Hook，已配置在 .codely-cli/settings.json）
+   │  每轮结束（AfterAgent Hook，由 install.js 注册于 ~/.codely-cli/settings.json）
    ▼
 chatgraphic/hook.js            ← 秒退不阻塞对话；sha1 去重；杀掉未完成的旧解析（最新胜出）
    │  异步派发（detached）
@@ -31,7 +31,7 @@ chatgraphic/work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + �
 
 ## 快速开始
 
-Hook 已写入项目配置并**已完成信任**（本机 `/hooks trust-project` 已执行）。直接两步：
+前置：已通过 `node chatgraphic/install.js` 注册用户级 Hook（未注册先执行，详见根 README）。直接两步：
 
 ```bash
 # 1. 启动导图视图（会自动打开浏览器；或手动访问 http://localhost:4830）
@@ -40,8 +40,7 @@ node chatgraphic/serve.js
 # 2. 在本项目里正常使用 Codely 聊天 —— 每轮结束后数秒~一两分钟内，导图自动生长
 ```
 
-> 在其他机器/克隆目录使用时，首次需信任项目 Hook：启动 Codely 后执行 `/hooks trust-project`（或按界面提示确认）。
-> 更省事的安装方式（全项目生效）：`codely extensions install <本仓库地址>` 后运行 `node chatgraphic/install.js` 注册**用户级** Hook（详见根 README「方式一」）。扩展安装态下数据存于 `~/.chatgraphic/`（防扩展升级清空），`CHATGRAPHIC_HOME` 环境变量可覆盖。
+> 每个项目首次使用时需信任一次：在该项目的 Codely 会话里执行 `/hooks trust-project`（CLI 安全机制，信任指纹按项目记录）。
 
 ## 手动补跑历史会话（复盘场景）
 
@@ -59,14 +58,14 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 |---|---|
 | 解析成本 | 每轮结束一次 `codely -p` 调用，模型为 `config.model`（默认 `codely-flash`，轻量快速），实测 15 轮会话约 8~100 秒 |
 | 转录上限 | 单轮文本截断 `maxTurnChars`；总载荷上限 `maxTotalLeanChars`，超限保头保尾略去中段（解析器会在「待确认」里如实标注） |
-| 一键关闭 | `chatgraphic/config.json` 里 `"enabled": false`（Hook 立即静默跳过）；彻底移除则删掉 `.codely-cli/settings.json` 中的 `AfterAgent` 配置 |
+| 一键关闭 | `chatgraphic/config.json` 里 `"enabled": false`（Hook 立即静默跳过）；彻底移除 Hook 则执行 `node chatgraphic/install.js --uninstall` |
 | 换模型 | `config.json` 的 `"model"` 改为任意已配置模型 id（如 `codely-core` 更强但更慢更贵） |
 | 观测 | `chatgraphic/work/hook.log`（全链路日志）、`status.json`（当前解析状态）、`version.txt`（导图版本） |
 
 ## 故障排查
 
 1. **导图不更新** → 看 `work/hook.log`：
-   - 无任何记录：Hook 没触发，运行 `/hooks` 检查是否 `enabled ... [project]`，未信任则 `/hooks trust-project`
+   - 无任何记录：Hook 没触发，运行 `/hooks` 检查是否 `enabled ... [user]`；未信任则在该项目执行 `/hooks trust-project`；未注册则运行 `node chatgraphic/install.js --status` 查看
    - `hook: 已派发解析` 后 `parser: 失败`：按日志里的错误处理（常见为解析超时，可调大 `parseTimeoutMs`）
 2. **解析结果质量波动** → 属于 LLM 正常现象，下一轮全量重解析会自愈；`parse-prompt.md` 可继续收紧
 3. **viewer 打不开** → 确认 `node chatgraphic/serve.js` 在跑、端口未被占用（`--port` 可换）
@@ -76,7 +75,7 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 
 | 文件 | 职责 |
 |---|---|
-| `.codely-cli/settings.json` | 项目级 AfterAgent Hook 配置（需信任后生效） |
+| `~/.codely-cli/settings.json`（用户级） | 由 `chatgraphic/install.js` 注册的 AfterAgent Hook（对所有项目生效，按项目信任） |
 | `chatgraphic/hook.js` | 触发器：防递归 / 去重 / 取代旧解析 / 异步派发，毫秒级退出 |
 | `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL 容错）→ 精简 → `codely -p` 同链路解析 → 校验归一化 → graph.json |
 | `chatgraphic/parse-prompt.md` | 解析提示词：分型 + 三问准入 + 置信分级 + 严格 JSON schema + 上一版 id 稳定性 |
