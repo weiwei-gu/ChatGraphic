@@ -2,6 +2,7 @@
   "enabled": true,
   "model": "codely-flash",
   "port": 4830,
+  "parseMode": "auto",
   "parseTimeoutMs": 240000,
   "maxTurnChars": 1200,
   "maxTotalLeanChars": 40000

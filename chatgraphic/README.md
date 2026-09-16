@@ -56,7 +56,7 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 
 | 事项 | 说明 |
 |---|---|
-| 解析成本 | 每轮结束一次 `codely -p` 调用，模型为 `config.model`（默认 `codely-flash`，轻量快速），实测 15 轮会话约 8~100 秒 |
+| 解析成本 | **自动增量（v0.2.0）**：同会话第二次起仅发送「图状态摘要 + 新增轮次」，实测输入从 38K 降到 0.4K 字符、耗时约 1/4，成本近似常数不再随会话线性涨；首次 / 转录被压缩 / 增量失败或疑似丢节点 → 自动回退全量；模型默认 `codely-flash` |
 | 转录上限 | 单轮文本截断 `maxTurnChars`；总载荷上限 `maxTotalLeanChars`，超限保头保尾略去中段（解析器会在「待确认」里如实标注） |
 | 一键关闭 | `chatgraphic/config.json` 里 `"enabled": false`（Hook 立即静默跳过）；彻底移除 Hook 则执行 `node chatgraphic/install.js --uninstall` |
 | 换模型 | `config.json` 的 `"model"` 改为任意已配置模型 id（如 `codely-core` 更强但更慢更贵） |
@@ -77,7 +77,7 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 |---|---|
 | `~/.codely-cli/settings.json`（用户级） | 由 `chatgraphic/install.js` 注册的 AfterAgent Hook（对所有项目生效，按项目信任） |
 | `chatgraphic/hook.js` | 触发器：防递归 / 去重 / 取代旧解析 / 异步派发，毫秒级退出 |
-| `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL 容错）→ 精简 → `codely -p` 同链路解析 → 校验归一化 → graph.json |
+| `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL 容错）→ 精简 → `codely -p` 同链路解析 → graph.json；v0.2.0 起支持增量解析（滚动窗口 + 图状态摘要，全量兜底） |
 | `chatgraphic/parse-prompt.md` | 解析提示词：分型 + 三问准入 + 置信分级 + 严格 JSON schema + 上一版 id 稳定性 |
 | `chatgraphic/serve.js` | 零依赖本地服务：viewer / graph.json / transcript.json / version / status |
 | `chatgraphic/install.js` | 用户级 Hook 注册/移除（`--uninstall` / `--status`），扩展安装方式配套 |

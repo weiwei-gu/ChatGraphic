@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 /*
- * ChatGraphic POC · parser.js — 解析 worker（会话级隔离版）
+ * ChatGraphic POC · parser.js — 解析 worker（会话级隔离 + 增量解析版）
  * 由 hook.js 异步派发，也可手动补跑：
- *   node parser.js --transcript <路径> [--session <会话id>]
+ *   node parser.js --transcript <路径> [--session <会话id>] [--full]
  * 每个会话独立目录 work/sessions/<sessionId>/，多窗口并行互不干扰；
  * 解析完成更新 work/current.json 指针（viewer 默认跟随最新会话）。
+ * 增量解析（v0.2.0，对齐 v0.3 Phase 2「滚动窗口 + 图状态摘要」）：
+ *   同会话第二次起，输入 = 图状态摘要 + 新增轮次（不再重发全量转录，成本近似常数）；
+ *   首次 / 转录被压缩 / 增量失败 / 疑似丢节点 → 自动回退全量；--full 可强制全量。
  * 解析失败重试 1 次；仍失败保留该会话上一版导图并写 status.json。
  */
 const fs = require('fs');
@@ -354,13 +357,61 @@ function normalize(parsed, roundCount) {
   return { goal, startRound, timeline, options, tasks, decisions, files, questions };
 }
 
+/* ---------- 增量解析（v0.3 Phase 2：滚动窗口 + 图状态摘要） ---------- */
+function resolveParseMode(o) {
+  const forceFull = o.forceFull, cfgMode = o.cfgMode, prev = o.prev, roundCount = o.roundCount;
+  if (forceFull) return 'full';
+  if (cfgMode === 'full') return 'full';
+  if (!prev || !Number.isInteger(prev.parsedRoundCount)) return 'full'; // 首次解析
+  if (roundCount < prev.parsedRoundCount) return 'full';                // 转录被压缩/重写，回退全量
+  if (roundCount === prev.parsedRoundCount) return 'skip';             // 无新增轮次
+  return 'incremental';                                                // auto / incremental
+}
+function canonNode(n) {
+  return JSON.stringify([n.id, n.type, n.title, n.parent, n.state || null, n.status || null,
+    n.note || '', n.evidence || '', n.confidence || '', n.roundRefs || []]);
+}
+function normNodes(n) { return [].concat(n.options, n.tasks, n.decisions, n.files, n.questions); }
+function computeGraphDiff(prev, next) {
+  const prevMap = new Map((prev || []).map(n => [n.id, canonNode(n)]));
+  const nextMap = new Map((next || []).map(n => [n.id, canonNode(n)]));
+  let added = 0, removed = 0, updated = 0;
+  (next || []).forEach(n => {
+    if (!prevMap.has(n.id)) added++;
+    else if (prevMap.get(n.id) !== canonNode(n)) updated++;
+  });
+  (prev || []).forEach(n => { if (!nextMap.has(n.id)) removed++; });
+  return { added, removed, updated };
+}
+function buildPromptIncremental(lean, prev) {
+  const instr = fs.readFileSync(path.join(DIR, 'parse-prompt.md'), 'utf8');
+  const summary = JSON.stringify({
+    goal: prev.goal,
+    startRound: prev.startRound,
+    timeline: prev.timeline || [],
+    nodes: (prev.nodes || []).map(n => ({
+      id: n.id, type: n.type, title: n.title, parent: n.parent,
+      state: n.state, status: n.status, note: n.note, evidence: n.evidence,
+      roundRefs: n.roundRefs, confidence: n.confidence
+    }))
+  });
+  let payload = instr
+    + '\n\n===== 当前导图状态（增量模式：以下节点已存在，除新增轮次给出修改依据外必须原样保留）=====\n' + summary
+    + '\n\n===== 新增轮次（自上次解析以来）=====\n\n' + lean
+    + '\n\n执行上述解析任务（增量模式）：基于「当前导图状态」与「新增轮次」，输出更新后的完整导图 JSON（不是 diff，是全量结果）。不要代码围栏，不要任何其他文字。';
+  if (payload.length > 90000) payload = payload.slice(0, 90000) + '\n…（截断）';
+  return payload;
+}
+
 /* ---------- 组装 graph.json（会话目录内） ---------- */
-function writeGraph(norm, sd, sessionId, roundCount) {
+function writeGraph(norm, sd, sessionId, roundCount, meta) {
   const version = readVersion(sd) + 1;
   const graph = {
     version,
     sessionId,
     roundCount,
+    parseMode: (meta && meta.mode) || 'full',
+    parsedRoundCount: roundCount,
     generatedAt: new Date().toISOString(),
     goal: norm.goal,
     startRound: norm.startRound,
@@ -410,29 +461,67 @@ async function main() {
     const rounds = buildRounds(history);
     if (!rounds.length) throw new Error('转录中未发现用户轮次');
 
-    atomicWrite(path.join(sd, 'transcript.json'), JSON.stringify({ rounds: rounds.map(viewRound) }, null, 1));
-    const lean = renderLean(rounds);
-    fs.writeFileSync(path.join(sd, 'lean.txt'), lean);
-    log('parser: [' + sessionId + '] 精简完成 · ' + rounds.length + ' 轮 · lean ' + lean.length + ' 字符');
-
-    const payload = buildPrompt(lean, sd);
-    let parsed = null, lastErr = null;
-    for (let attempt = 1; attempt <= 2 && !parsed; attempt++) {
-      try {
-        log('parser: [' + sessionId + '] 调用 codely（第 ' + attempt + ' 次）');
-        const out = await runCodely(payload);
-        parsed = extractJson(out);
-      } catch (e) { lastErr = e; log('parser: [' + sessionId + '] 第 ' + attempt + ' 次解析失败 - ' + (e.message || e)); }
+    // 模式决策（v0.2.0 增量解析）：--full / config.parseMode / 首次全量 / 转录回退全量 / 无新增跳过
+    let prevGraph = null;
+    try { prevGraph = JSON.parse(fs.readFileSync(path.join(sd, 'graph.json'), 'utf8')); } catch (e) {}
+    const mode = resolveParseMode({
+      forceFull: process.argv.includes('--full'),
+      cfgMode: CFG.parseMode, prev: prevGraph, roundCount: rounds.length
+    });
+    if (mode === 'skip') {
+      setStatus(sd, { state: 'ok', finishedAt: new Date().toISOString(), roundCount: rounds.length, version: readVersion(sd), parseMode: 'skip' });
+      log('parser: [' + sessionId + '] 无新增轮次（' + rounds.length + '），跳过解析');
+      return;
     }
-    if (!parsed) throw (lastErr || new Error('解析失败'));
 
-    const norm = normalize(parsed, rounds.length);
-    const version = writeGraph(norm, sd, sessionId, rounds.length);
+    atomicWrite(path.join(sd, 'transcript.json'), JSON.stringify({ rounds: rounds.map(viewRound) }, null, 1));
+    let lean, payloadInc = null, payloadFull;
+    if (mode === 'incremental') {
+      const newRounds = rounds.slice(prevGraph.parsedRoundCount); // 滚动窗口：只发新增轮次
+      lean = renderLean(newRounds);
+      payloadInc = buildPromptIncremental(lean, prevGraph);      // 图状态摘要 + 新增轮次
+      log('parser: [' + sessionId + '] 增量模式 · 新增 ' + newRounds.length + ' 轮 · 图状态 ' + (prevGraph.nodes || []).length + ' 节点 · lean ' + lean.length + ' 字符');
+    } else {
+      lean = renderLean(rounds);
+      log('parser: [' + sessionId + '] 全量模式 · ' + rounds.length + ' 轮 · lean ' + lean.length + ' 字符');
+    }
+    fs.writeFileSync(path.join(sd, 'lean.txt'), lean);
+    payloadFull = buildPrompt(lean, sd);
+
+    // 尝试序列：增量失败 / 疑似丢节点 → 回退全量（全量保留一次重试）
+    const attempts = mode === 'incremental' ? ['incremental', 'full', 'full'] : ['full', 'full'];
+    let norm = null, usedMode = mode, lastErr = null, diff = null;
+    for (let i = 0; i < attempts.length && !norm; i++) {
+      const m = attempts[i];
+      try {
+        log('parser: [' + sessionId + '] 调用 codely（' + m + (i > 0 ? ' · 回退' : '') + '）');
+        const out = await runCodely(m === 'incremental' ? payloadInc : payloadFull);
+        const n2 = normalize(extractJson(out), rounds.length);
+        const nodes = normNodes(n2);
+        if (prevGraph) {
+          const d = computeGraphDiff(prevGraph.nodes, nodes);
+          if (m === 'incremental' && (prevGraph.nodes || []).length > 0 && d.removed > (prevGraph.nodes || []).length * 0.5) {
+            throw new Error('增量结果疑似丢节点（移除 ' + d.removed + '/' + prevGraph.nodes.length + '），回退全量');
+          }
+          diff = d;
+        }
+        norm = n2; usedMode = m;
+      } catch (e) {
+        lastErr = e;
+        log('parser: [' + sessionId + '] ' + m + ' 解析失败 - ' + (e.message || e));
+      }
+    }
+    if (!norm) throw (lastErr || new Error('解析失败'));
+
+    const version = writeGraph(norm, sd, sessionId, rounds.length, { mode: usedMode });
     setStatus(sd, {
       state: 'ok', finishedAt: new Date().toISOString(), roundCount: rounds.length, version,
+      parseMode: usedMode, diff: diff || undefined,
       counts: { options: norm.options.length, tasks: norm.tasks.length, decisions: norm.decisions.length, files: norm.files.length, questions: norm.questions.length }
     });
-    log('parser: [' + sessionId + '] 完成 v' + version + ' · 方案 ' + norm.options.length + ' · 任务 ' + norm.tasks.length
+    log('parser: [' + sessionId + '] 完成 v' + version + '（' + (usedMode === 'incremental' ? '增量' : '全量') + '）'
+      + (diff ? ' · 图变化 +' + diff.added + ' 新增 / ' + diff.updated + ' 更新 / -' + diff.removed + ' 移除' : '')
+      + ' · 方案 ' + norm.options.length + ' · 任务 ' + norm.tasks.length
       + ' · 决策 ' + norm.decisions.length + ' · 文件 ' + norm.files.length + ' · 待确认 ' + norm.questions.length);
   } catch (e) {
     setStatus(sd, { state: 'error', finishedAt: new Date().toISOString(), error: String(e.message || e) });
@@ -447,6 +536,7 @@ if (require.main === module) main();
 module.exports = {
   resolveWork, resolveSessionId, loadTranscriptFromRaw, entryRole, entryParts,
   buildRounds, roundBlocks, renderLean, viewRound,
-  buildPrompt, extractJson, normalize, writeGraph,
+  buildPrompt, buildPromptIncremental, extractJson, normalize, writeGraph,
+  resolveParseMode, computeGraphDiff, normNodes,
   __setConfig, __resetConfig
 };

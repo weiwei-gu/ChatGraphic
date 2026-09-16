@@ -38,6 +38,6 @@ node chatgraphic/serve.js       # 启动导图视图（自动打开 http://local
 ## 日常使用
 
 - **看图**：`serve.js` 启动后浏览器自动打开；左栏「会话」面板可切换/固定任意会话，画布拖拽缩放，节点点击回链对话原文
-- **复盘**：`node chatgraphic/parser.js --transcript <会话JSON路径>` 手动补跑历史会话
-- **成本控制**：`chatgraphic/config.json` 可换解析模型（默认 `codely-flash`）、`"enabled": false` 一键关闭
+- **复盘**：`node chatgraphic/parser.js --transcript <会话JSON路径>` 手动补跑历史会话；加 `--full` 强制全量重解析（默认自动增量）
+- **成本控制**：`chatgraphic/config.json` 可换解析模型（默认 `codely-flash`）、`"enabled": false` 一键关闭、`"parseMode": "full|incremental|auto"` 控制解析模式
 - **排障**：见 [chatgraphic/README.md](../chatgraphic/README.md) 的「成本与控制 / 故障排查」章节（`work/hook.log` 全链路日志）

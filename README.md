@@ -23,7 +23,7 @@ node ~/.codely-cli/extensions/chatgraphic/chatgraphic/install.js     # 注册用
 ├── .github/workflows/             CI（测试矩阵）与 Release（tag → GitHub Release）
 ├── chatgraphic/                   POC 实现（组件细节见 chatgraphic/README.md）
 │   ├── hook.js                    AfterAgent 触发器：去重 / 取代旧解析 / 秒级退出
-│   ├── parser.js                  解析 worker：转录精简 → codely -p 同链路解析 → graph.json
+│   ├── parser.js                  解析 worker：精简 → codely -p 同链路解析 → graph.json（自动增量：图状态+新增轮次）
 │   ├── parse-prompt.md            解析提示词：分型 + 三问准入 + 置信分级
 │   ├── serve.js / viewer.html     本地只读视图服务与导图界面（生长动画 / 回链原文 / 导出）
 │   ├── install.js                 用户级 Hook 注册 / 移除
