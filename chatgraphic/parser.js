@@ -256,7 +256,7 @@ function codelyEntryFromDir(d) {
   try {
     const txt = fs.readFileSync(path.join(d, 'codely.cmd'), 'utf8');
     const m = txt.match(/(%dp0%|[A-Za-z]:)[^"\r\n]*?node_modules[\\/]@codely[\\/]cli[\\/][^"\r\n]*?\.js/);
-    if (m) return path.resolve(m[0].split('%dp0%').join(d));
+    if (m) return path.resolve(m[0].split('%dp0%').join(d).replace(/\\/g, '/'));
   } catch (e) { /* 继续 */ }
   return null;
 }
