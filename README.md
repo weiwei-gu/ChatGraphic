@@ -29,8 +29,10 @@ node .codely-cli/extensions/chatgraphic/chatgraphic/install.js     # 注册 Hook
 │   ├── parse-prompt.md            解析提示词：分型 + 三问准入 + 置信分级
 │   ├── serve.js / viewer.html     本地只读视图服务与导图界面（生长动画 / 回链原文 / 导出）
 │   ├── install.js                 用户级 Hook 注册 / 移除
+│   ├── codex-hook.js              Codex notify 触发器（agent-turn-complete → 同链路解析）
+│   ├── install-codex.js           Codex notify 注册 / 移除（写入 ~/.codex/config.toml）
 │   ├── config.json                开关 / 解析模型 / 端口 / 截断上限
-│   └── test/                      22 个离线测试用例（node --test，零依赖）
+│   └── test/                      47 个离线测试用例（node --test，零依赖）
 └── docs/                          产品页发布副本（index.html = GitHub Pages）+ 详细文档
     ├── guide.md                   安装与使用指南
     ├── architecture.md            架构、组件职责与设计要点

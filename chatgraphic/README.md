@@ -42,6 +42,22 @@ node chatgraphic/serve.js
 
 > 每个项目首次使用时需信任一次：在该项目的 Codely 会话里执行 `/hooks trust-project`（CLI 安全机制，信任指纹按项目记录）。
 
+## Codex CLI 支持（实验）
+
+ChatGraphic 也能长出 **Codex CLI** 会话的导图：Codex 的 `notify` 机制在每轮结束（`agent-turn-complete`）时以 JSON（最后一个参数）调用外部程序，借此触发同一套解析链路。
+
+```bash
+# 注册（幂等写入 ~/.codex/config.toml 的 notify 键；--uninstall 移除 / --status 查看）
+node chatgraphic/install-codex.js
+
+# 之后正常使用 Codex —— 每轮结束自动解析出图；历史会话可手动补跑：
+node chatgraphic/codex-hook.js ~/.codex/sessions/2026/09/06/rollout-xxxx-<thread-id>.jsonl
+```
+
+- **链路**：notify → `codex-hook.js`（按 `thread-id` 定位 `sessions/<年/月/日>/rollout-*-<thread-id>.jsonl` 全量转录）→ 同一套 `parser.js`（codely 同链路解析）→ 同一个 viewer
+- **转录适配**：parser 自动识别 Codex rollout 格式（跳过 developer/环境注入与 event_msg 回显；工具名经 call_id 映射）；会话 id = thread-id
+- **注意**：`config.toml` 的 `notify` 已被其他程序占用时不覆盖（告警提示手动处理）；数据目录规则与 Codely 相同；`config.json` 的 `"enabled": false` 同样一键关闭两端；Codex 新版 hooks 系统（0.145+）只拦截工具调用、无轮次结束事件，故选 notify 通道
+
 ## 手动补跑历史会话（复盘场景）
 
 对任意 auto-save 转录或实时转录 JSONL 生成导图：
@@ -77,12 +93,14 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 |---|---|
 | `~/.codely-cli/settings.json`（用户级） | 由 `chatgraphic/install.js` 注册的 AfterAgent Hook（对所有项目生效，按项目信任） |
 | `chatgraphic/hook.js` | 触发器：防递归 / 去重 / 取代旧解析 / 异步派发，毫秒级退出 |
-| `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL 容错）→ 精简 → `codely -p` 同链路解析 → graph.json；v0.2.0 起支持增量解析（滚动窗口 + 图状态摘要，全量兜底） |
+| `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL / Codex rollout 容错）→ 精简 → `codely -p` 同链路解析 → graph.json；v0.2.0 起支持增量解析（滚动窗口 + 图状态摘要，全量兜底） |
 | `chatgraphic/parse-prompt.md` | 解析提示词：分型 + 三问准入 + 置信分级 + 严格 JSON schema + 上一版 id 稳定性 |
 | `chatgraphic/serve.js` | 零依赖本地服务：viewer / graph.json / transcript.json / version / status |
 | `chatgraphic/install.js` | 用户级 Hook 注册/移除（`--uninstall` / `--status`），扩展安装方式配套 |
+| `chatgraphic/codex-hook.js` | Codex notify 触发器：`agent-turn-complete` → 按 thread-id 定位 rollout → 同款秒退/去重/取代旧解析/派发 |
+| `chatgraphic/install-codex.js` | Codex notify 注册/移除（写入 `~/.codex/config.toml`，顶层键插到首个表头前、幂等、他人占用不覆盖） |
 | `chatgraphic/viewer.html` | 只读导图：分层布局、生长动画、节点回链原文、拖拽缩放、导出 PNG/Markdown |
-| `chatgraphic/test/` | 22 个离线测试用例（`npm test`，node --test；不调用 codely/LLM） |
+| `chatgraphic/test/` | 47 个离线测试用例（`npm test`，node --test；不调用 codely/LLM） |
 | `chatgraphic/work/` | 运行时产物：`sessions/<会话id>/`（graph.json / transcript.json / status.json …）、`current.json`（最新会话指针）、`hook.log`（全链路日志） |
 
 ## 与 v0.3 的对齐与边界
