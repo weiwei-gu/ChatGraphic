@@ -103,7 +103,8 @@ function main() {
         CODELY_SESSION_ID: sessionId
       }),
       detached: true,
-      stdio: 'ignore'
+      stdio: 'ignore',
+      windowsHide: true // Windows 下 detached 子进程默认新开可见控制台窗口，隐藏之
     });
     child.unref();
     log('hook: [' + sessionId + '] 已派发解析（转录 ' + hash.slice(0, 8) + '）');

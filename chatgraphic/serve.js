@@ -125,6 +125,6 @@ server.listen(port, () => {
     const opener = process.platform === 'win32' ? { cmd: 'cmd', pre: ['/c', 'start', ''] }
       : process.platform === 'darwin' ? { cmd: 'open', pre: [] }
       : { cmd: 'xdg-open', pre: [] };
-    try { require('child_process').spawn(opener.cmd, opener.pre.concat(url), { detached: true, stdio: 'ignore' }).unref(); } catch (e) {}
+    try { require('child_process').spawn(opener.cmd, opener.pre.concat(url), { detached: true, stdio: 'ignore', windowsHide: true }).unref(); } catch (e) {}
   }
 });

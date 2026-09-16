@@ -282,7 +282,8 @@ function runCodely(payload) {
     const child = spawn(codely.cmd, codely.pre.concat(args), {
       cwd: scratch,
       env: Object.assign({}, process.env, { CHATGRAPHIC_CHILD: '1' }),
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
     });
     let out = '', err = '';
     child.stdout.on('data', d => { out += d; });
