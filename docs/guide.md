@@ -10,7 +10,7 @@
 # 1. 安装扩展到本项目（--scope workspace → <项目>/.codely-cli/extensions/；从 GitHub 最新 Release 拉取已发布版本）
 codely extensions install https://github.com/weiwei-gu/ChatGraphic --scope workspace
 
-# 2. 注册用户级 Hook（写入 ~/.codely-cli/settings.json，一次注册所有项目可用）
+# 2. 注册 Hook（作用域跟随安装位置：--scope workspace → 本项目 .codely-cli/settings.json；用户级安装 → ~/.codely-cli/settings.json）
 node .codely-cli/extensions/chatgraphic/chatgraphic/install.js
 
 # 3. 打开导图视图
@@ -30,7 +30,7 @@ node .codely-cli/extensions/chatgraphic/chatgraphic/serve.js
 ```bash
 git clone git@github.com:weiwei-gu/ChatGraphic.git
 cd ChatGraphic
-node chatgraphic/install.js     # 同样注册用户级 Hook（指向本克隆目录）
+node chatgraphic/install.js     # 注册 Hook 到本项目 .codely-cli/settings.json（本地文件，已 gitignore）
 node chatgraphic/serve.js       # 启动导图视图（自动打开 http://localhost:4830）
 ```
 

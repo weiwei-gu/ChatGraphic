@@ -7,6 +7,9 @@ chatgraphic/work/
 # 工作区作用域扩展安装目录（codely extensions install --scope workspace；内含安装器的 .git，勿入库）
 .codely-cli/extensions/
 
+# 项目级 Hook 注册文件（install.js 本地生成，勿入库）
+.codely-cli/settings.json
+
 # 根目录测试沙箱（独立运行环境，不入库；注意锚定根路径，避免误伤 chatgraphic/test/）
 /test/
 

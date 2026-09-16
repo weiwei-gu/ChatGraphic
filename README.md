@@ -9,7 +9,7 @@ ChatGraphic 是 [Codely](https://codely-docs.tuanjie.cn)（AI 编程 CLI）的�
 
 ```bash
 codely extensions install https://github.com/weiwei-gu/ChatGraphic --scope workspace
-node .codely-cli/extensions/chatgraphic/chatgraphic/install.js     # 注册用户级 Hook
+node .codely-cli/extensions/chatgraphic/chatgraphic/install.js     # 注册 Hook（作用域跟随安装：此处为项目级）
 ```
 
 `--scope workspace` 把扩展装入**本项目的** `.codely-cli/extensions/`（从最新 Release 拉取）；不加则装入用户目录 `~/.codely-cli/extensions/`（全局共享一份）。查看导图：`node .codely-cli/extensions/chatgraphic/chatgraphic/serve.js`。
