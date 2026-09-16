@@ -63,8 +63,11 @@ work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 �
 ├── ChatGraphic产品描述 v0.3.html             # 产品描述文档（最新版）
 ├── chatgraphic/                             # POC 实现（详见 chatgraphic/README.md）
 │   ├── hook.js · parser.js · parse-prompt.md · serve.js · viewer.html · config.json
+├── docs/index.html                           # 产品描述 v0.3 副本（GitHub Pages 发布目录）
 └── .codely-cli/settings.json                # AfterAgent Hook 配置
 ```
+
+> 静态发布：GitHub Settings → Pages → Branch `main` / Folder `/docs`，发布后访问 `https://weiwei-gu.github.io/ChatGraphic/`。更新文档后重新 `cp "ChatGraphic产品描述 v0.3.html" docs/index.html` 即可。
 
 ## 状态与路线
 
