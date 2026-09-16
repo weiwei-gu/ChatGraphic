@@ -10,6 +10,9 @@ chatgraphic/work/
 # 项目级 Hook 注册文件（install.js 本地生成，勿入库）
 .codely-cli/settings.json
 
+# Codely 定时任务运行时文件（cron 持久化与锁，本地生成，勿入库）
+.codely-cli/scheduled_tasks.*
+
 # 根目录测试沙箱（独立运行环境，不入库；注意锚定根路径，避免误伤 chatgraphic/test/）
 /test/
 
