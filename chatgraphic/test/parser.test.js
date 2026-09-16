@@ -170,15 +170,17 @@ test('resolveSessionId：--session 参数 > 环境变量 > JSONL 头 > tag > man
 });
 
 /* ---------- 数据目录规则 ---------- */
-test('resolveWork：CHATGRAPHIC_HOME > 扩展安装态 > 本地 work/', () => {
+test('resolveWork：CHATGRAPHIC_HOME > 扩展安装态（user/workspace 作用域）> 本地 work/', () => {
   const os = require('os');
   const extDir = path.join(os.homedir(), '.codely-cli', 'extensions', 'chatgraphic', 'chatgraphic');
+  const wsDir = '/Users/somewhere/MyProject/.codely-cli/extensions/chatgraphic/chatgraphic'; // workspace 作用域
   const repoDir = '/Users/somewhere/ChatGraphic/chatgraphic';
   try {
     process.env.CHATGRAPHIC_HOME = '/tmp/cg-home';
     assert.strictEqual(P.resolveWork(extDir), path.join('/tmp/cg-home', 'work'));
     delete process.env.CHATGRAPHIC_HOME;
-    assert.strictEqual(P.resolveWork(extDir), path.join(os.homedir(), '.chatgraphic'), '扩展安装态数据不入扩展目录');
+    assert.strictEqual(P.resolveWork(extDir), path.join(os.homedir(), '.chatgraphic'), 'user 作用域：数据不入扩展目录');
+    assert.strictEqual(P.resolveWork(wsDir), path.join(os.homedir(), '.chatgraphic'), 'workspace 作用域：数据同样隔离');
     assert.strictEqual(P.resolveWork(repoDir), path.join(repoDir, 'work'), '仓库/开发态用本地 work/');
   } finally {
     delete process.env.CHATGRAPHIC_HOME;

@@ -19,10 +19,10 @@ const { spawn } = require('child_process');
 
 const DIR = __dirname;
 
-/* 数据目录：CHATGRAPHIC_HOME 可覆盖；扩展安装态（~/.codely-cli/extensions/…）放 ~/.chatgraphic/ 防 update 清空；仓库/开发态用本地 work/ */
+/* 数据目录：CHATGRAPHIC_HOME 可覆盖；扩展安装态（user/workspace 作用域均含 .codely-cli/extensions/ 路径段）放 ~/.chatgraphic/ 防 update 清空；仓库/开发态用本地 work/ */
 function resolveWork(dir) {
   if (process.env.CHATGRAPHIC_HOME) return path.join(process.env.CHATGRAPHIC_HOME, 'work');
-  if (dir.startsWith(path.join(os.homedir(), '.codely-cli', 'extensions') + path.sep)) {
+  if (path.resolve(dir).includes(path.sep + '.codely-cli' + path.sep + 'extensions' + path.sep)) {
     return path.join(os.homedir(), '.chatgraphic');
   }
   return path.join(dir, 'work');

@@ -21,7 +21,7 @@ const DIR = __dirname;
 /* 数据目录：与 hook.js/parser.js 同规则（CHATGRAPHIC_HOME > 扩展安装态 ~/.chatgraphic > 本地 work/） */
 function resolveWork(dir) {
   if (process.env.CHATGRAPHIC_HOME) return path.join(process.env.CHATGRAPHIC_HOME, 'work');
-  if (dir.startsWith(path.join(os.homedir(), '.codely-cli', 'extensions') + path.sep)) {
+  if (path.resolve(dir).includes(path.sep + '.codely-cli' + path.sep + 'extensions' + path.sep)) {
     return path.join(os.homedir(), '.chatgraphic');
   }
   return path.join(dir, 'work');
