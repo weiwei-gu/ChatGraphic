@@ -436,7 +436,7 @@ function relayout(anim){
   if(!arr.length)return;
   arr.forEach(n=>{n.col=depthOf(n)});
   const maxCol=Math.max(...arr.map(n=>n.col));
-  const cols=[];for(let c=0;c<=maxCol;c++)cols.push([]);
+  const cols=[];for(let c=0;c<=Math.max(maxCol,3);c++)cols.push([]);/* 兜底补足 4 列：空图（仅 root / root+分类）时 maxCol<3，下方 cols[1]/cols[2] 需为空数组而非 undefined */
   arr.forEach(n=>cols[n.col].push(n));
   const catOrder=id=>{const i=CATS.findIndex(c=>c.id===id);return i<0?9:i};
   cols[1].sort((a,b)=>catOrder(a.id)-catOrder(b.id));
