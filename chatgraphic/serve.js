@@ -14,9 +14,19 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const os = require('os');
 
 const DIR = __dirname;
-const WORK = path.join(DIR, 'work');
+
+/* 数据目录：与 hook.js/parser.js 同规则（CHATGRAPHIC_HOME > 扩展安装态 ~/.chatgraphic > 本地 work/） */
+function resolveWork(dir) {
+  if (process.env.CHATGRAPHIC_HOME) return path.join(process.env.CHATGRAPHIC_HOME, 'work');
+  if (dir.startsWith(path.join(os.homedir(), '.codely-cli', 'extensions') + path.sep)) {
+    return path.join(os.homedir(), '.chatgraphic');
+  }
+  return path.join(dir, 'work');
+}
+const WORK = resolveWork(DIR);
 const SESSROOT = path.join(WORK, 'sessions');
 let cfg = {};
 try { cfg = JSON.parse(fs.readFileSync(path.join(DIR, 'config.json'), 'utf8')); } catch (e) {}

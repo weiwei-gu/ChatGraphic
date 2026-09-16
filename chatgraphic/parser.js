@@ -15,7 +15,16 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const DIR = __dirname;
-const WORK = path.join(DIR, 'work');
+
+/* 数据目录：CHATGRAPHIC_HOME 可覆盖；扩展安装态（~/.codely-cli/extensions/…）放 ~/.chatgraphic/ 防 update 清空；仓库/开发态用本地 work/ */
+function resolveWork(dir) {
+  if (process.env.CHATGRAPHIC_HOME) return path.join(process.env.CHATGRAPHIC_HOME, 'work');
+  if (dir.startsWith(path.join(os.homedir(), '.codely-cli', 'extensions') + path.sep)) {
+    return path.join(os.homedir(), '.chatgraphic');
+  }
+  return path.join(dir, 'work');
+}
+const WORK = resolveWork(DIR);
 const SESSROOT = path.join(WORK, 'sessions');
 const CFG = JSON.parse(fs.readFileSync(path.join(DIR, 'config.json'), 'utf8'));
 

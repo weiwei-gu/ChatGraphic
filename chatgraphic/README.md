@@ -41,6 +41,7 @@ node chatgraphic/serve.js
 ```
 
 > 在其他机器/克隆目录使用时，首次需信任项目 Hook：启动 Codely 后执行 `/hooks trust-project`（或按界面提示确认）。
+> 更省事的安装方式（全项目生效）：`codely extensions install <本仓库地址>` 后运行 `node chatgraphic/install.js` 注册**用户级** Hook（详见根 README「方式一」）。扩展安装态下数据存于 `~/.chatgraphic/`（防扩展升级清空），`CHATGRAPHIC_HOME` 环境变量可覆盖。
 
 ## 手动补跑历史会话（复盘场景）
 
@@ -80,6 +81,7 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 | `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL 容错）→ 精简 → `codely -p` 同链路解析 → 校验归一化 → graph.json |
 | `chatgraphic/parse-prompt.md` | 解析提示词：分型 + 三问准入 + 置信分级 + 严格 JSON schema + 上一版 id 稳定性 |
 | `chatgraphic/serve.js` | 零依赖本地服务：viewer / graph.json / transcript.json / version / status |
+| `chatgraphic/install.js` | 用户级 Hook 注册/移除（`--uninstall` / `--status`），扩展安装方式配套 |
 | `chatgraphic/viewer.html` | 只读导图：分层布局、生长动画、节点回链原文、拖拽缩放、导出 PNG/Markdown |
 | `chatgraphic/work/` | 运行时产物：`sessions/<会话id>/`（graph.json / transcript.json / status.json …）、`current.json`（最新会话指针）、`hook.log`（全链路日志） |
 

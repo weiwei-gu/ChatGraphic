@@ -6,19 +6,40 @@ ChatGraphic 是 [Codely](https://codely-docs.tuanjie.cn)（AI 编程 CLI）的�
 
 本仓库包含：产品描述文档（`ChatGraphic产品描述 v0.3.html`）与**可运行的 POC**（`chatgraphic/`）——真实 Hook 触发、真实同链路解析、本地渲染，非脚本演示。
 
-## 快速开始（POC）
+## 安装与使用
 
-前置：本机已安装并登录 `codely` CLI（POC 通过 `codely -p` 复用同一模型链路）。
+前置：本机已安装并登录 `codely` CLI（解析通过 `codely -p` 复用同一模型链路）。
+
+### 方式一：Codely 扩展安装（推荐）
+
+本仓库同时是一个合法的 Codely 扩展（根目录 `gemini-extension.json`）：
+
+```bash
+# 1. 安装扩展（代码进入 ~/.codely-cli/extensions/chatgraphic/；支持 extensions update 升级）
+codely extensions install https://github.com/weiwei-gu/ChatGraphic
+
+# 2. 注册用户级 Hook（写入 ~/.codely-cli/settings.json，一次注册所有项目可用）
+node ~/.codely-cli/extensions/chatgraphic/chatgraphic/install.js
+
+# 3. 打开导图视图
+node ~/.codely-cli/extensions/chatgraphic/chatgraphic/serve.js
+```
+
+每个项目**首次使用**时，在该项目的 Codely 会话里执行一次 `/hooks trust-project`（CLI 安全机制：Hook 信任指纹按项目记录于 `~/.codely-cli/trusted_hooks.json`）。扩展安装态的导图数据存于 `~/.chatgraphic/`，不受扩展升级影响。
+
+> 移除：`node .../install.js --uninstall` + `codely extensions uninstall chatgraphic`。
+> 注：Codely 1.0.0-rc.60 的扩展 manifest 尚不注册 hooks 字段（已实测），Hook 注册由 install.js 完成。
+
+### 方式二：克隆仓库（项目级 Hook）
 
 ```bash
 git clone git@github.com:weiwei-gu/ChatGraphic.git
 cd ChatGraphic
-
-node chatgraphic/serve.js     # 启动导图视图（自动打开 http://localhost:4830）
-
+node chatgraphic/serve.js      # 启动导图视图（自动打开 http://localhost:4830）
 # 在本仓库目录里启动 Codely 正常对话；首次需信任项目 Hook：/hooks trust-project
-# 之后每轮结束，导图自动生长（实测单轮出图约 8~15 秒，不阻塞对话）
 ```
+
+之后每轮结束，导图自动生长（实测单轮出图约 8~15 秒，不阻塞对话）。两种方式请只启用一种；若并存，Hook 的转录去重会自动避免重复解析，但建议保持单一来源。
 
 历史会话复盘：`node chatgraphic/parser.js --transcript <会话JSON路径>`
 
@@ -61,10 +82,12 @@ work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 �
 
 ```
 ├── ChatGraphic产品描述 v0.3.html             # 产品描述文档（最新版）
+├── gemini-extension.json                    # Codely 扩展 manifest（extensions install 入口）
 ├── chatgraphic/                             # POC 实现（详见 chatgraphic/README.md）
 │   ├── hook.js · parser.js · parse-prompt.md · serve.js · viewer.html · config.json
+│   └── install.js                           # 用户级 Hook 注册/移除（扩展方式安装用）
 ├── docs/index.html                           # 产品描述 v0.3 副本（GitHub Pages 发布目录）
-└── .codely-cli/settings.json                # AfterAgent Hook 配置
+└── .codely-cli/settings.json                # 项目级 AfterAgent Hook 配置（方式二）
 ```
 
 > 静态发布：GitHub Settings → Pages → Branch `main` / Folder `/docs`，发布后访问 `https://weiwei-gu.github.io/ChatGraphic/`。更新文档后重新 `cp "ChatGraphic产品描述 v0.3.html" docs/index.html` 即可。
