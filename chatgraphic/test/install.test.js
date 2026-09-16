@@ -25,7 +25,7 @@ test('项目级注册：写入 $CODELY_PROJECT_DIR 可移植命令；幂等；�
   assert.strictEqual(r1.changed, true);
   assert.strictEqual(r1.scope, '项目级');
   const s1 = read(settings);
-  const expected = 'node "$CODELY_PROJECT_DIR/' + path.relative(projectRoot, path.join(hookDir, 'hook.js')) + '"';
+  const expected = 'node "$CODELY_PROJECT_DIR/' + path.relative(projectRoot, path.join(hookDir, 'hook.js')).split(path.sep).join('/') + '"';
   assert.strictEqual(s1.hooks.AfterAgent[0].hooks[0].command, expected, '项目级应为项目根锚定的可移植命令');
 
   const r2 = I.installTo(settings, hookDir);
@@ -36,8 +36,23 @@ test('项目级注册：写入 $CODELY_PROJECT_DIR 可移植命令；幂等；�
   assert.strictEqual(read(settings).hooks, undefined, 'hooks 空壳应整体还原');
 });
 
+test('幂等安装时清理重复注册（旧版 Windows 缺陷遗留场景）', () => {
+  const { hookDir, settings } = mkProject();
+  I.installTo(settings, hookDir);
+  const s = read(settings);
+  s.hooks.AfterAgent.push(JSON.parse(JSON.stringify(s.hooks.AfterAgent[0]))); // 模拟旧版缺陷产物：同命令两条
+  fs.writeFileSync(settings, JSON.stringify(s));
+  const r = I.installTo(settings, hookDir);
+  assert.strictEqual(r.changed, false, '仍识别为已安装');
+  const ours = read(settings).hooks.AfterAgent.flatMap(g => g.hooks || []).filter(h => I.isOurs(h, hookDir, settings));
+  assert.strictEqual(ours.length, 1, '重复条目应被清理，仅保留一条');
+  I.uninstallFrom(settings, hookDir);
+  assert.strictEqual(read(settings).hooks, undefined, '清理后仍可完全卸载');
+});
+
 test('hookCmdOf：用户级用绝对路径，项目级用 $CODELY_PROJECT_DIR（纯函数，不写文件）', () => {
-  assert.strictEqual(I.hookCmdOf(USER_SETTINGS, '/x/chatgraphic'), 'node "/x/chatgraphic/hook.js"');
+  const userDir = path.join('/x', 'chatgraphic');
+  assert.strictEqual(I.hookCmdOf(USER_SETTINGS, userDir), 'node "' + path.join(userDir, 'hook.js') + '"');
   assert.strictEqual(
     I.hookCmdOf('/x/proj/.codely-cli/settings.json', '/x/proj/.codely-cli/extensions/chatgraphic/chatgraphic'),
     'node "$CODELY_PROJECT_DIR/.codely-cli/extensions/chatgraphic/chatgraphic/hook.js"'
@@ -94,9 +109,10 @@ test('statusOf 报告安装状态与作用域', () => {
 
 /* ---------- 注册位置解析（作用域跟随安装位置） ---------- */
 test('resolveSettingsPath：workspace 作用域 → 项目级；用户作用域 → 用户级', () => {
-  const ws = '/Users/dev/MyProject/.codely-cli/extensions/chatgraphic/chatgraphic';
+  const proj = path.join(os.tmpdir(), 'cg-ws', 'MyProject'); // 平台原生路径，避免 POSIX 字面路径在 Windows 失真
+  const ws = path.join(proj, '.codely-cli', 'extensions', 'chatgraphic', 'chatgraphic');
   const us = path.join(os.homedir(), '.codely-cli', 'extensions', 'chatgraphic', 'chatgraphic');
-  assert.strictEqual(I.resolveSettingsPath(ws), '/Users/dev/MyProject/.codely-cli/settings.json', 'workspace → 项目 settings');
+  assert.strictEqual(I.resolveSettingsPath(ws), path.join(proj, '.codely-cli', 'settings.json'), 'workspace → 项目 settings');
   assert.strictEqual(I.resolveSettingsPath(us), USER_SETTINGS, '用户作用域 → 用户 settings');
 });
 

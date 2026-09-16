@@ -16,7 +16,8 @@
  *
  * 命令写法：
  *   项目级 → node "$CODELY_PROJECT_DIR/<hook.js 相对项目根路径>"（Codely 官方占位符，
- *            hook 执行时展开，跨机器/跨克隆位置可移植）
+ *            hook 执行时展开，跨机器/跨克隆位置可移植；相对路径统一 '/' 分隔，
+ *            识别/去重/卸载比较前经 normSep 归一化，兼容新旧与各平台分隔符写法）
  *   用户级 → node "<绝对路径>"（本机文件，无官方 home 占位符）
  *   兼容：旧版绝对路径写法仍被识别（不重复注册、卸载可清理）。
  *
@@ -59,6 +60,9 @@ function resolveSettingsPath(hookDir) {
 function isUserSettings(p) { return path.resolve(p) === path.resolve(USER_SETTINGS); }
 function scopeLabel(p) { return isUserSettings(p) ? '用户级' : '项目级'; }
 function projectRootOf(settingsPath) { return path.dirname(path.dirname(path.resolve(settingsPath))); }
+/* 分隔符归一化：命令模板自带 '/'，而 Windows 的 path.relative/join 产出 '\'，混排路径直接
+   includes 比较永不命中（曾致 Windows 下重复注册 / 误报未安装 / 卸载失效），比较前统一为 '/' */
+const normSep = s => String(s).split('\\').join('/');
 
 /* ---------- 核心逻辑（参数化，可测试） ---------- */
 const HOOK_CONFIG_KEYS = ['enabled', 'enableUI', 'disabled', 'notifications', 'maxTotalDurationPerTurn', 'mode', 'environmentSanitization'];
@@ -66,8 +70,9 @@ const HOOK_CONFIG_KEYS = ['enabled', 'enableUI', 'disabled', 'notifications', 'm
 function hookCmdOf(settingsPath, hookDir) {
   const hookPath = path.join(hookDir, 'hook.js');
   if (isUserSettings(settingsPath)) return 'node "' + hookPath + '"'; // 用户级：本机绝对路径
-  // 项目级：$CODELY_PROJECT_DIR 锚定（hook 执行时由 Codely 展开，跨机器可移植）
-  const rel = path.relative(projectRootOf(settingsPath), hookPath);
+  // 项目级：$CODELY_PROJECT_DIR 锚定（hook 执行时由 Codely 展开，跨机器可移植）；
+  // 相对路径统一 '/' 分隔，避免 Windows '\' 与模板 '/' 混排
+  const rel = path.relative(projectRootOf(settingsPath), hookPath).split(path.sep).join('/');
   return 'node "$CODELY_PROJECT_DIR/' + rel + '"';
 }
 /* 命中判定：绝对路径形式（旧版兼容）或 $CODELY_PROJECT_DIR 展开后指向同一 hook.js */
@@ -77,10 +82,11 @@ function isOurs(h, hookDir, settingsPath) {
 function findOursCmd(h, hookDir, settingsPath) {
   const cmd = String((h && h.command) || '');
   if (!cmd.includes('hook.js')) return null;
-  if (cmd.includes(path.join(hookDir, 'hook.js'))) return cmd; // 旧版绝对路径形式
+  const needle = normSep(path.join(hookDir, 'hook.js'));
+  if (normSep(cmd).includes(needle)) return cmd; // 旧版绝对路径形式（归一化后比较）
   if (settingsPath && !isUserSettings(settingsPath) && cmd.includes('$CODELY_PROJECT_DIR')) {
     const expanded = cmd.split('$CODELY_PROJECT_DIR').join(projectRootOf(settingsPath));
-    if (expanded.includes(path.join(hookDir, 'hook.js'))) return cmd;
+    if (normSep(expanded).includes(needle)) return cmd;
   }
   return null;
 }
@@ -91,6 +97,10 @@ function loadSettings(p) {
 function saveSettings(p, s) {
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+}
+function backupAndSave(p, s) {
+  if (fs.existsSync(p)) fs.writeFileSync(p + '.chatgraphic-backup', fs.readFileSync(p));
+  saveSettings(p, s);
 }
 function findOurs(s, hookDir, settingsPath) {
   const groups = (s.hooks && s.hooks.AfterAgent) || [];
@@ -103,6 +113,26 @@ function findOurs(s, hookDir, settingsPath) {
   return null;
 }
 
+/* 去重：旧版在 Windows 下识别不了自身命令，重复运行 install.js 会留下多条相同注册
+   （双重解析 = 双倍成本）。幂等安装时顺带清理，仅保留最先出现的一条，返回清理条数。 */
+function removeDuplicateOurs(s, hookDir, settingsPath) {
+  let seen = false, removed = 0;
+  for (const g of s.hooks.AfterAgent) {
+    if (!g || !Array.isArray(g.hooks)) continue;
+    const keep = [];
+    for (const h of g.hooks) {
+      if (findOursCmd(h, hookDir, settingsPath)) {
+        if (seen) { removed++; continue; }
+        seen = true;
+      }
+      keep.push(h);
+    }
+    g.hooks = keep;
+  }
+  s.hooks.AfterAgent = s.hooks.AfterAgent.filter(g => g && (!Array.isArray(g.hooks) || g.hooks.length > 0));
+  return removed;
+}
+
 function installTo(settingsPath, hookDir) {
   const scope = scopeLabel(settingsPath);
   const s = loadSettings(settingsPath);
@@ -111,6 +141,11 @@ function installTo(settingsPath, hookDir) {
   s.hooks.AfterAgent = Array.isArray(s.hooks.AfterAgent) ? s.hooks.AfterAgent : [];
   const existing = findOurs(s, hookDir, settingsPath);
   if (existing) {
+    const removed = removeDuplicateOurs(s, hookDir, settingsPath); // 旧版 Windows 缺陷可能遗留重复注册
+    if (removed > 0) {
+      backupAndSave(settingsPath, s);
+      console.log('✓ 已清理 ' + removed + ' 条重复注册（旧版 Windows 缺陷遗留，保留一条）');
+    }
     console.log('✓ Hook 已安装（幂等跳过，' + scope + '）：\n  ' + existing);
     return { changed: false, scope };
   }
@@ -119,10 +154,7 @@ function installTo(settingsPath, hookDir) {
     matcher: '',
     hooks: [{ type: 'command', command: cmd, timeout: 10000 }]
   });
-  if (fs.existsSync(settingsPath)) {
-    fs.writeFileSync(settingsPath + '.chatgraphic-backup', fs.readFileSync(settingsPath));
-  }
-  saveSettings(settingsPath, s);
+  backupAndSave(settingsPath, s);
   console.log('✓ 已注册 AfterAgent Hook（' + scope + (scope === '用户级' ? '，一次注册所有项目可用' : '，仅本项目生效') + '）：');
   console.log('  ' + cmd);
   console.log('  → 写入 ' + settingsPath + (fs.existsSync(settingsPath + '.chatgraphic-backup') ? '（原文件备份为 *.chatgraphic-backup）' : ''));
@@ -168,7 +200,7 @@ function conflictWarning(settingsPath, hookDir, userSettingsPath) {
     for (const g of groups) {
       for (const h of (g && g.hooks) || []) {
         const cmd = String((h && h.command) || '');
-        if (cmd.includes('chatgraphic') && cmd.includes('hook.js') && !cmd.includes(path.join(hookDir, 'hook.js'))) {
+        if (cmd.includes('chatgraphic') && cmd.includes('hook.js') && !normSep(cmd).includes(normSep(path.join(hookDir, 'hook.js')))) {
           return '⚠ 检测到用户级已注册另一份 ChatGraphic Hook（' + cmd + '）——两份并存会双重解析（双倍成本），建议 node <对应目录>/install.js --uninstall 移除其中一份';
         }
       }
