@@ -338,6 +338,40 @@ function runCodely(payload) {
     });
   });
 }
+/* ---------- 同链路解析（Codex 会话）：codex exec 无头运行 ----------
+   「同链路」在 Codex 侧的本义：用用户 Codex 配置的模型/认证（config.toml 的 model），
+   config.json 的 model 不参与路由；引擎由转录格式决定（isCodexRollout）。
+   exec 为 agent 形态：stdin 必须立即关闭（读附加输入直到 EOF）；--skip-git-repo-check
+   适配 tmpdir cwd；stdout 即最终回复（extractJson 括号配对可容忍少量过程输出）。 */
+function isCodexRollout(raw) {
+  return /"type":"(session_meta|response_item)"/.test(String(raw).slice(0, 400));
+}
+function runCodex(payload) {
+  return new Promise((resolve, reject) => {
+    const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'chatgraphic-parse-'));
+    const child = spawn('codex', ['exec', '--skip-git-repo-check', payload], {
+      cwd: scratch,
+      env: Object.assign({}, process.env, { CHATGRAPHIC_CHILD: '1' }),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+    child.stdin.end(); // exec 从 stdin 读附加输入直到 EOF，必须立即关闭
+    let out = '', err = '';
+    child.stdout.on('data', d => { out += d; });
+    child.stderr.on('data', d => { err += d; });
+    const timer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch (e) {}
+      reject(new Error('解析超时（' + CFG.parseTimeoutMs + 'ms）'));
+    }, CFG.parseTimeoutMs);
+    child.on('error', e => { clearTimeout(timer); reject(e); });
+    child.on('close', code => {
+      clearTimeout(timer);
+      try { fs.rmSync(scratch, { recursive: true, force: true }); } catch (e) {}
+      if (code === 0) resolve(out);
+      else reject(new Error('codex exec 退出码 ' + code + '；stderr: ' + err.slice(0, 400)));
+    });
+  });
+}
 function extractJson(text) {
   if (!text || !text.trim()) throw new Error('空响应');
   let t = text.trim();
@@ -557,13 +591,15 @@ async function main() {
     payloadFull = buildPrompt(lean, sd);
 
     // 尝试序列：增量失败 / 疑似丢节点 → 回退全量（全量保留一次重试）
+    // 引擎路由（同链路）：Codex rollout → codex exec（Codex 配置的模型/认证）；其余 → codely -p
+    const engine = isCodexRollout(raw) ? 'codex' : 'codely';
     const attempts = mode === 'incremental' ? ['incremental', 'full', 'full'] : ['full', 'full'];
     let norm = null, usedMode = mode, lastErr = null, diff = null;
     for (let i = 0; i < attempts.length && !norm; i++) {
       const m = attempts[i];
       try {
-        log('parser: [' + sessionId + '] 调用 codely（' + m + (i > 0 ? ' · 回退' : '') + '）');
-        const out = await runCodely(m === 'incremental' ? payloadInc : payloadFull);
+        log('parser: [' + sessionId + '] 调用 ' + engine + (engine === 'codex' ? ' exec' : '') + '（' + m + (i > 0 ? ' · 回退' : '') + '）');
+        const out = await (engine === 'codex' ? runCodex(m === 'incremental' ? payloadInc : payloadFull) : runCodely(m === 'incremental' ? payloadInc : payloadFull));
         const n2 = normalize(extractJson(out), rounds.length);
         const nodes = normNodes(n2);
         if (prevGraph) {
@@ -605,7 +641,7 @@ module.exports = {
   resolveWork, resolveSessionId, loadTranscriptFromRaw, entryRole, entryParts,
   buildRounds, roundBlocks, renderLean, viewRound,
   buildPrompt, buildPromptIncremental, extractJson, normalize, writeGraph,
-  resolveParseMode, computeGraphDiff, normNodes, codexRolloutToHistory,
+  resolveParseMode, computeGraphDiff, normNodes, codexRolloutToHistory, isCodexRollout,
   codelyEntryFromDir, resolveCodelySpawn,
   __setConfig, __resetConfig
 };

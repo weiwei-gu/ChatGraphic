@@ -54,7 +54,7 @@ node chatgraphic/install-codex.js
 node chatgraphic/codex-hook.js ~/.codex/sessions/2026/09/06/rollout-xxxx-<thread-id>.jsonl
 ```
 
-- **链路**：notify → `codex-hook.js`（按 `thread-id` 定位 `sessions/<年/月/日>/rollout-*-<thread-id>.jsonl` 全量转录）→ 同一套 `parser.js`（codely 同链路解析）→ 同一个 viewer
+- **链路**：notify → `codex-hook.js`（按 `thread-id` 定位 `sessions/<年/月/日>/rollout-*-<thread-id>.jsonl` 全量转录）→ 同一套 `parser.js` → **引擎路由（同链路）**：Codex 会话用 `codex exec` 解析（你 Codex 配置的模型/认证，`config.json` 的 `model` 不参与）；Codely 会话仍走 `codely -p` → 同一个 viewer
 - **转录适配**：parser 自动识别 Codex rollout 格式（跳过 developer/环境注入与 event_msg 回显；工具名经 call_id 映射）；会话 id = thread-id
 - **注意**：`config.toml` 的 `notify` 已被其他程序占用时不覆盖（告警提示手动处理）；数据目录规则与 Codely 相同；`config.json` 的 `"enabled": false` 同样一键关闭两端；Codex 新版 hooks 系统（0.145+）只拦截工具调用、无轮次结束事件，故选 notify 通道
 
@@ -75,7 +75,7 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 | 解析成本 | **自动增量（v0.2.0）**：同会话第二次起仅发送「图状态摘要 + 新增轮次」，实测输入从 38K 降到 0.4K 字符、耗时约 1/4，成本近似常数不再随会话线性涨；首次 / 转录被压缩 / 增量失败或疑似丢节点 → 自动回退全量；模型默认 `codely-flash` |
 | 转录上限 | 单轮文本截断 `maxTurnChars`；总载荷上限 `maxTotalLeanChars`，超限保头保尾略去中段（解析器会在「待确认」里如实标注） |
 | 一键关闭 | `chatgraphic/config.json` 里 `"enabled": false`（Hook 立即静默跳过）；彻底移除 Hook 则执行 `node chatgraphic/install.js --uninstall` |
-| 换模型 | `config.json` 的 `"model"` 改为任意已配置模型 id（如 `codely-core` 更强但更慢更贵） |
+| 换模型 | Codely 引擎：`config.json` 的 `"model"` 改为任意已配置模型 id（如 `codely-core` 更强但更慢更贵）；Codex 引擎：用你 `~/.codex/config.toml` 配置的模型（`config.json` 的 `model` 不参与） |
 | 观测 | `chatgraphic/work/hook.log`（全链路日志）、`status.json`（当前解析状态）、`version.txt`（导图版本） |
 
 ## 故障排查
@@ -93,7 +93,7 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 |---|---|
 | `~/.codely-cli/settings.json`（用户级） | 由 `chatgraphic/install.js` 注册的 AfterAgent Hook（对所有项目生效，按项目信任） |
 | `chatgraphic/hook.js` | 触发器：防递归 / 去重 / 取代旧解析 / 异步派发，毫秒级退出 |
-| `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL / Codex rollout 容错）→ 精简 → `codely -p` 同链路解析 → graph.json；v0.2.0 起支持增量解析（滚动窗口 + 图状态摘要，全量兜底） |
+| `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL / Codex rollout 容错）→ 精简 → 同链路解析（引擎路由：Codex 会话 `codex exec`、其余 `codely -p`）→ graph.json；v0.2.0 起支持增量解析（滚动窗口 + 图状态摘要，全量兜底） |
 | `chatgraphic/parse-prompt.md` | 解析提示词：分型 + 三问准入 + 置信分级 + 严格 JSON schema + 上一版 id 稳定性 |
 | `chatgraphic/serve.js` | 零依赖本地服务：viewer / graph.json / transcript.json / version / status |
 | `chatgraphic/install.js` | 用户级 Hook 注册/移除（`--uninstall` / `--status`），扩展安装方式配套 |

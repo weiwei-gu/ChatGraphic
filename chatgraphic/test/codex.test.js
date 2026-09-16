@@ -52,6 +52,13 @@ test('resolveSessionId：Codex session_meta 头提取 thread id', () => {
   assert.strictEqual(P.resolveSessionId(ROLLOUT), TID);
 });
 
+test('isCodexRollout：引擎路由识别（Codex rollout → codex exec；Codely 转录 → codely -p）', () => {
+  assert.strictEqual(P.isCodexRollout(ROLLOUT), true);
+  assert.strictEqual(P.isCodexRollout(JSON.stringify({ tag: 'x', clientHistory: [] })), false, 'auto-save JSON 不误判');
+  assert.strictEqual(P.isCodexRollout(JSON.stringify({ t: 'put', msg: { role: 'user', parts: [] } })), false, 'Codely 实时 JSONL 不误判');
+  assert.strictEqual(P.isCodexRollout(''), false);
+});
+
 /* ---------- codex-hook 纯函数 ---------- */
 test('parseNotifyArgv：kebab-case 优先、snake_case 兼容、非 JSON 为 null', () => {
   assert.deepStrictEqual(CX.parseNotifyArgv('{"type":"agent-turn-complete","thread-id":"a1"}'), { threadId: 'a1', type: 'agent-turn-complete' });
