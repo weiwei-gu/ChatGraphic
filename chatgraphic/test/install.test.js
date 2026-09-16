@@ -25,7 +25,7 @@ test('项目级注册：写入 $CODELY_PROJECT_DIR 可移植命令；幂等；�
   assert.strictEqual(r1.changed, true);
   assert.strictEqual(r1.scope, '项目级');
   const s1 = read(settings);
-  const expected = 'node "$CODELY_PROJECT_DIR/' + path.relative(projectRoot, path.join(hookDir, 'hook.js')).split(path.sep).join('/') + '"';
+  const expected = 'node $CODELY_PROJECT_DIR/' + path.relative(projectRoot, path.join(hookDir, 'hook.js')).split(path.sep).join('/');
   assert.strictEqual(s1.hooks.AfterAgent[0].hooks[0].command, expected, '项目级应为项目根锚定的可移植命令');
 
   const r2 = I.installTo(settings, hookDir);
@@ -50,12 +50,25 @@ test('幂等安装时清理重复注册（旧版 Windows 缺陷遗留场景）',
   assert.strictEqual(read(settings).hooks, undefined, '清理后仍可完全卸载');
 });
 
+test('幂等安装时迁移旧格式命令（引号写法 → 无引号规范写法）', () => {
+  const { hookDir, settings, projectRoot } = mkProject();
+  fs.mkdirSync(path.dirname(settings), { recursive: true });
+  const rel = path.relative(projectRoot, path.join(hookDir, 'hook.js')).split(path.sep).join('/');
+  // v0.2.5 及更早的引号写法：Codely 展开占位符时自动 shell 转义，引号进入路径 → 运行时找不到模块
+  fs.writeFileSync(settings, JSON.stringify({
+    hooks: { enabled: true, AfterAgent: [{ matcher: '', hooks: [{ type: 'command', command: 'node "$CODELY_PROJECT_DIR/' + rel + '"', timeout: 10000 }] }] }
+  }));
+  const r = I.installTo(settings, hookDir);
+  assert.strictEqual(r.changed, false, '识别为已安装');
+  assert.strictEqual(read(settings).hooks.AfterAgent[0].hooks[0].command, 'node $CODELY_PROJECT_DIR/' + rel, '应迁移为无引号规范写法');
+});
+
 test('hookCmdOf：用户级用绝对路径，项目级用 $CODELY_PROJECT_DIR（纯函数，不写文件）', () => {
   const userDir = path.join('/x', 'chatgraphic');
   assert.strictEqual(I.hookCmdOf(USER_SETTINGS, userDir), 'node "' + path.join(userDir, 'hook.js') + '"');
   assert.strictEqual(
     I.hookCmdOf('/x/proj/.codely-cli/settings.json', '/x/proj/.codely-cli/extensions/chatgraphic/chatgraphic'),
-    'node "$CODELY_PROJECT_DIR/.codely-cli/extensions/chatgraphic/chatgraphic/hook.js"'
+    'node $CODELY_PROJECT_DIR/.codely-cli/extensions/chatgraphic/chatgraphic/hook.js'
   );
 });
 

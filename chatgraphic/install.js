@@ -15,9 +15,11 @@
  *   兜底：~/.codely-cli/settings.json
  *
  * 命令写法：
- *   项目级 → node "$CODELY_PROJECT_DIR/<hook.js 相对项目根路径>"（Codely 官方占位符，
- *            hook 执行时展开，跨机器/跨克隆位置可移植；相对路径统一 '/' 分隔，
- *            识别/去重/卸载比较前经 normSep 归一化，兼容新旧与各平台分隔符写法）
+ *   项目级 → node $CODELY_PROJECT_DIR/<hook.js 相对项目根路径>（Codely 官方占位符，
+ *            hook 执行时展开并自动 shell 转义，跨机器/跨克隆位置可移植；占位符外层
+ *            不加引号——展开值自带单引号，再包引号会使其成为路径字面量，node 报
+ *            Cannot find module；相对路径统一 '/' 分隔；识别/去重/迁移/卸载比较前
+ *            经 normSep 归一化，兼容新旧与各平台分隔符写法）
  *   用户级 → node "<绝对路径>"（本机文件，无官方 home 占位符）
  *   兼容：旧版绝对路径写法仍被识别（不重复注册、卸载可清理）。
  *
@@ -71,9 +73,10 @@ function hookCmdOf(settingsPath, hookDir) {
   const hookPath = path.join(hookDir, 'hook.js');
   if (isUserSettings(settingsPath)) return 'node "' + hookPath + '"'; // 用户级：本机绝对路径
   // 项目级：$CODELY_PROJECT_DIR 锚定（hook 执行时由 Codely 展开，跨机器可移植）；
-  // 相对路径统一 '/' 分隔，避免 Windows '\' 与模板 '/' 混排
+  // 相对路径统一 '/' 分隔；占位符外层不加引号：Codely 展开时自动 shell 转义（值自带
+  // 单引号），再包双引号会让引号进入路径字面量 → node 报 Cannot find module
   const rel = path.relative(projectRootOf(settingsPath), hookPath).split(path.sep).join('/');
-  return 'node "$CODELY_PROJECT_DIR/' + rel + '"';
+  return 'node $CODELY_PROJECT_DIR/' + rel;
 }
 /* 命中判定：绝对路径形式（旧版兼容）或 $CODELY_PROJECT_DIR 展开后指向同一 hook.js */
 function isOurs(h, hookDir, settingsPath) {
@@ -133,6 +136,23 @@ function removeDuplicateOurs(s, hookDir, settingsPath) {
   return removed;
 }
 
+/* 迁移：将最先命中的一条注册命令改写为当前规范写法。旧写法在运行时可能已失效——
+   如 v0.2.5 及更早的引号写法，因 Codely 占位符展开自动 shell 转义而找不到模块。
+   返回是否发生改写。 */
+function migrateFirstOurs(s, hookDir, settingsPath, cmd) {
+  for (const g of s.hooks.AfterAgent) {
+    if (!g || !Array.isArray(g.hooks)) continue;
+    for (const h of g.hooks) {
+      if (findOursCmd(h, hookDir, settingsPath)) {
+        if (h.command === cmd) return false;
+        h.command = cmd;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function installTo(settingsPath, hookDir) {
   const scope = scopeLabel(settingsPath);
   const s = loadSettings(settingsPath);
@@ -141,12 +161,15 @@ function installTo(settingsPath, hookDir) {
   s.hooks.AfterAgent = Array.isArray(s.hooks.AfterAgent) ? s.hooks.AfterAgent : [];
   const existing = findOurs(s, hookDir, settingsPath);
   if (existing) {
+    const canonical = hookCmdOf(settingsPath, hookDir);
     const removed = removeDuplicateOurs(s, hookDir, settingsPath); // 旧版 Windows 缺陷可能遗留重复注册
-    if (removed > 0) {
+    const migrated = existing !== canonical && migrateFirstOurs(s, hookDir, settingsPath, canonical); // 旧格式命令迁移为规范写法
+    if (removed > 0 || migrated) {
       backupAndSave(settingsPath, s);
-      console.log('✓ 已清理 ' + removed + ' 条重复注册（旧版 Windows 缺陷遗留，保留一条）');
+      if (removed > 0) console.log('✓ 已清理 ' + removed + ' 条重复注册（旧版 Windows 缺陷遗留，保留一条）');
+      if (migrated) console.log('✓ 已将旧格式命令迁移为规范写法（旧写法在 Codely 占位符自动转义下会找不到模块）');
     }
-    console.log('✓ Hook 已安装（幂等跳过，' + scope + '）：\n  ' + existing);
+    console.log('✓ Hook 已安装（幂等跳过，' + scope + '）：\n  ' + canonical);
     return { changed: false, scope };
   }
   const cmd = hookCmdOf(settingsPath, hookDir);

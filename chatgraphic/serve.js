@@ -120,7 +120,11 @@ server.listen(port, () => {
   if (tries > 0 && actual === port) console.log('（配置端口被占用，已自动避让到 ' + port + '）');
   console.log('提示：导图未生成时，在 Codely 里聊一轮即可；历史会话可手动补跑：');
   console.log('      node chatgraphic/parser.js --transcript <会话JSON路径>');
-  if (!noOpen && process.platform === 'darwin') {
-    try { require('child_process').spawn('open', [url], { detached: true, stdio: 'ignore' }).unref(); } catch (e) {}
+  if (!noOpen) {
+    // 按平台打开浏览器（Windows 用 cmd start，空串占位防 start 把 URL 当窗口标题）；失败静默不影响服务
+    const opener = process.platform === 'win32' ? { cmd: 'cmd', pre: ['/c', 'start', ''] }
+      : process.platform === 'darwin' ? { cmd: 'open', pre: [] }
+      : { cmd: 'xdg-open', pre: [] };
+    try { require('child_process').spawn(opener.cmd, opener.pre.concat(url), { detached: true, stdio: 'ignore' }).unref(); } catch (e) {}
   }
 });

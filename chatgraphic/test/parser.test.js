@@ -3,7 +3,26 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const P = require('../parser.js');
+
+/* ---------- Windows：codely .cmd shim 入口定位（spawn 无法直接执行 .cmd） ---------- */
+test('codelyEntryFromDir：标准 npm 布局 / shim 文本解析 / 未命中', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-codely-'));
+  const pkgDir = path.join(root, 'node_modules', '@codely', 'cli');
+  fs.mkdirSync(pkgDir, { recursive: true });
+  fs.writeFileSync(path.join(pkgDir, 'package.json'), JSON.stringify({ bin: { codely: 'bundle/gemini.js' } }));
+  assert.strictEqual(P.codelyEntryFromDir(root), path.join(pkgDir, 'bundle', 'gemini.js'), '标准布局应经 package.json bin 定位');
+
+  const root2 = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-codely-'));
+  fs.writeFileSync(path.join(root2, 'codely.cmd'),
+    'endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\node_modules\\@codely\\cli\\bundle\\gemini.js" %*');
+  assert.strictEqual(P.codelyEntryFromDir(root2), path.join(root2, 'node_modules', '@codely', 'cli', 'bundle', 'gemini.js'), '无 package.json 时应解析 shim 文本');
+
+  const root3 = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-codely-'));
+  assert.strictEqual(P.codelyEntryFromDir(root3), null, '未命中应返回 null');
+});
 
 /* ---------- 转录归一化：三种真实格式 ---------- */
 test('loadTranscriptFromRaw：auto-save clientHistory 格式', () => {

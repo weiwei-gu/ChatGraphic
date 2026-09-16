@@ -242,6 +242,35 @@ function buildPrompt(lean, sd) {
   if (payload.length > 90000) payload = payload.slice(0, 90000) + '\n…（截断）';
   return payload;
 }
+/* ---------- Windows：codely 是 .cmd shim，spawn 无法直接执行（ENOENT）。
+   定位真实 JS 入口后改用当前 node 运行（零依赖，且避开 shell 引号/转义问题） ---------- */
+function codelyEntryFromDir(d) {
+  // 1) 标准 npm 全局布局：<d>/node_modules/@codely/cli/package.json 的 bin.codely
+  try {
+    const pkgDir = path.join(d, 'node_modules', '@codely', 'cli');
+    const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
+    const bin = typeof pkg.bin === 'string' ? pkg.bin : (pkg.bin && pkg.bin.codely);
+    if (bin) return path.resolve(pkgDir, bin);
+  } catch (e) { /* 布局不匹配，继续 */ }
+  // 2) 解析 .cmd shim 文本中的 JS 目标（兼容自定义 prefix 等非标准布局）
+  try {
+    const txt = fs.readFileSync(path.join(d, 'codely.cmd'), 'utf8');
+    const m = txt.match(/(%dp0%|[A-Za-z]:)[^"\r\n]*?node_modules[\\/]@codely[\\/]cli[\\/][^"\r\n]*?\.js/);
+    if (m) return path.resolve(m[0].split('%dp0%').join(d));
+  } catch (e) { /* 继续 */ }
+  return null;
+}
+function resolveCodelySpawn() {
+  if (process.platform !== 'win32') return { cmd: 'codely', pre: [] };
+  const dirs = [];
+  if (process.env.APPDATA) dirs.push(path.join(process.env.APPDATA, 'npm'));
+  String(process.env.PATH || '').split(path.delimiter).forEach(d => { if (d) dirs.push(d); });
+  for (const d of dirs) {
+    const entry = codelyEntryFromDir(d);
+    if (entry) return { cmd: process.execPath, pre: [entry] };
+  }
+  return { cmd: 'codely', pre: [] }; // 未定位到 → 保持原生命令（POSIX 正常；Windows 将报 ENOENT）
+}
 function runCodely(payload) {
   return new Promise((resolve, reject) => {
     const args = [];
@@ -249,7 +278,8 @@ function runCodely(payload) {
     args.push('--output-format', 'text', '-p', payload);
     // 独占临时目录作为 cwd：同机并行解析互不共享任何 cwd 内状态
     const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'chatgraphic-parse-'));
-    const child = spawn('codely', args, {
+    const codely = resolveCodelySpawn();
+    const child = spawn(codely.cmd, codely.pre.concat(args), {
       cwd: scratch,
       env: Object.assign({}, process.env, { CHATGRAPHIC_CHILD: '1' }),
       stdio: ['ignore', 'pipe', 'pipe']
@@ -538,5 +568,6 @@ module.exports = {
   buildRounds, roundBlocks, renderLean, viewRound,
   buildPrompt, buildPromptIncremental, extractJson, normalize, writeGraph,
   resolveParseMode, computeGraphDiff, normNodes,
+  codelyEntryFromDir, resolveCodelySpawn,
   __setConfig, __resetConfig
 };
