@@ -5,6 +5,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const I = require('../install.js');
 
 const USER_SETTINGS = path.join(os.homedir(), '.codely-cli', 'settings.json');
@@ -19,14 +20,15 @@ function mkProject() {
 }
 const read = p => JSON.parse(fs.readFileSync(p, 'utf8'));
 
-test('项目级注册：写入 $CODELY_PROJECT_DIR 可移植命令；幂等；卸载完全还原', () => {
+test('项目级注册：写入 node -e 可移植命令；幂等；卸载完全还原', () => {
   const { hookDir, settings, projectRoot } = mkProject();
   const r1 = I.installTo(settings, hookDir);
   assert.strictEqual(r1.changed, true);
   assert.strictEqual(r1.scope, '项目级');
   const s1 = read(settings);
-  const expected = 'node $CODELY_PROJECT_DIR/' + path.relative(projectRoot, path.join(hookDir, 'hook.js')).split(path.sep).join('/');
-  assert.strictEqual(s1.hooks.AfterAgent[0].hooks[0].command, expected, '项目级应为项目根锚定的可移植命令');
+  const rel = path.relative(projectRoot, path.join(hookDir, 'hook.js')).split(path.sep).join('/');
+  const expected = 'node -e "process.env.CHATGRAPHIC_HOOK_AS_MAIN=\'1\';require((process.env.CODELY_PROJECT_DIR||process.cwd())+\'/' + rel + '\')"';
+  assert.strictEqual(s1.hooks.AfterAgent[0].hooks[0].command, expected, '项目级应为 node -e + 环境变量锚定的可移植命令');
 
   const r2 = I.installTo(settings, hookDir);
   assert.strictEqual(r2.changed, false, '幂等跳过');
@@ -50,7 +52,7 @@ test('幂等安装时清理重复注册（旧版 Windows 缺陷遗留场景）',
   assert.strictEqual(read(settings).hooks, undefined, '清理后仍可完全卸载');
 });
 
-test('幂等安装时迁移旧格式命令（引号写法 → 无引号规范写法）', () => {
+test('幂等安装时迁移旧格式命令（占位符写法 → node -e 规范写法）', () => {
   const { hookDir, settings, projectRoot } = mkProject();
   fs.mkdirSync(path.dirname(settings), { recursive: true });
   const rel = path.relative(projectRoot, path.join(hookDir, 'hook.js')).split(path.sep).join('/');
@@ -60,15 +62,37 @@ test('幂等安装时迁移旧格式命令（引号写法 → 无引号规范写
   }));
   const r = I.installTo(settings, hookDir);
   assert.strictEqual(r.changed, false, '识别为已安装');
-  assert.strictEqual(read(settings).hooks.AfterAgent[0].hooks[0].command, 'node $CODELY_PROJECT_DIR/' + rel, '应迁移为无引号规范写法');
+  assert.strictEqual(read(settings).hooks.AfterAgent[0].hooks[0].command, I.hookCmdOf(settings, hookDir), '应迁移为 node -e 规范写法');
 });
 
-test('hookCmdOf：用户级用绝对路径，项目级用 $CODELY_PROJECT_DIR（纯函数，不写文件）', () => {
+test('项目级命令经 node -e 执行（模拟 Codely Windows 免 shell 机制）', () => {
+  const { hookDir, settings, projectRoot } = mkProject();
+  fs.mkdirSync(hookDir, { recursive: true });
+  fs.copyFileSync(path.join(__dirname, '..', 'hook.js'), path.join(hookDir, 'hook.js')); // -e 脚本将 require() 真实 hook.js
+  I.installTo(settings, hookDir);
+  const cmd = read(settings).hooks.AfterAgent[0].hooks[0].command;
+  assert.ok(cmd.startsWith('node -e "') && cmd.endsWith('"'), '应为 node -e "JSON 串" 形式');
+  const script = JSON.parse(cmd.slice('node -e '.length)); // Codely 内部同款提取：JSON.parse 剥引号
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-ehome-'));
+  const tp = path.join(home, 'transcript.json');
+  fs.writeFileSync(tp, JSON.stringify({ tag: 'x', clientHistory: [{ role: 'user', parts: [{ text: 'hi' }] }] }));
+  const r = spawnSync(process.execPath, ['-e', script], {
+    env: Object.assign({}, process.env, {
+      CODELY_PROJECT_DIR: projectRoot, CODELY_SESSION_ID: 'etest',
+      CODELY_TRANSCRIPT_PATH: tp, CHATGRAPHIC_HOME: home,
+      CHATGRAPHIC_PARSER_PATH: path.join(__dirname, 'fake-parser.js')
+    })
+  });
+  assert.strictEqual(r.status, 0, 'stderr: ' + r.stderr);
+  assert.ok(fs.existsSync(path.join(home, 'work', 'sessions', 'etest', 'trigger.json')), 'main() 应已执行并派发解析');
+});
+
+test('hookCmdOf：用户级用绝对路径，项目级用 node -e 环境变量（纯函数，不写文件）', () => {
   const userDir = path.join('/x', 'chatgraphic');
   assert.strictEqual(I.hookCmdOf(USER_SETTINGS, userDir), 'node "' + path.join(userDir, 'hook.js') + '"');
   assert.strictEqual(
     I.hookCmdOf('/x/proj/.codely-cli/settings.json', '/x/proj/.codely-cli/extensions/chatgraphic/chatgraphic'),
-    'node $CODELY_PROJECT_DIR/.codely-cli/extensions/chatgraphic/chatgraphic/hook.js'
+    'node -e "process.env.CHATGRAPHIC_HOOK_AS_MAIN=\'1\';require((process.env.CODELY_PROJECT_DIR||process.cwd())+\'/.codely-cli/extensions/chatgraphic/chatgraphic/hook.js\')"'
   );
 });
 

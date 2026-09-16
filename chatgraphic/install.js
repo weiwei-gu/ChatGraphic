@@ -15,11 +15,16 @@
  *   兜底：~/.codely-cli/settings.json
  *
  * 命令写法：
- *   项目级 → node $CODELY_PROJECT_DIR/<hook.js 相对项目根路径>（Codely 官方占位符，
- *            hook 执行时展开并自动 shell 转义，跨机器/跨克隆位置可移植；占位符外层
- *            不加引号——展开值自带单引号，再包引号会使其成为路径字面量，node 报
- *            Cannot find module；相对路径统一 '/' 分隔；识别/去重/迁移/卸载比较前
- *            经 normSep 归一化，兼容新旧与各平台分隔符写法）
+ *   项目级 → node -e "process.env.CHATGRAPHIC_HOOK_AS_MAIN='1';require((process.env.CODELY_PROJECT_DIR||process.cwd())+'/<hook.js 相对项目根路径>')"
+ *     （Codely 对 `node -e "JSON 串"` 命令在 Windows 下免 shell 直跑（CLI 内部机制），
+ *      绕开 $CODELY_PROJECT_DIR 占位符展开自动转义与各 shell 引号差异；POSIX 经
+ *      bash -c 剥除双引号后等价执行。CODELY_PROJECT_DIR 环境变量由 Codely 注入
+ *      hook 子进程，cwd 亦为项目根可作兜底；require() 加载需 CHATGRAPHIC_HOOK_AS_MAIN=1
+ *      才执行 main()，见 hook.js 尾部）
+ *   用户级 → node "<绝对路径>"（本机文件，无官方 home 占位符）
+ *   兼容：旧版绝对路径 / $CODELY_PROJECT_DIR 占位符（v0.2.3~v0.2.6，运行时已失效）
+ *         写法仍被识别——不重复注册、卸载可清理、幂等安装时自动迁移为规范写法；
+ *         各写法比较前经 normSep 归一化分隔符。
  *   用户级 → node "<绝对路径>"（本机文件，无官方 home 占位符）
  *   兼容：旧版绝对路径写法仍被识别（不重复注册、卸载可清理）。
  *
@@ -72,11 +77,9 @@ const HOOK_CONFIG_KEYS = ['enabled', 'enableUI', 'disabled', 'notifications', 'm
 function hookCmdOf(settingsPath, hookDir) {
   const hookPath = path.join(hookDir, 'hook.js');
   if (isUserSettings(settingsPath)) return 'node "' + hookPath + '"'; // 用户级：本机绝对路径
-  // 项目级：$CODELY_PROJECT_DIR 锚定（hook 执行时由 Codely 展开，跨机器可移植）；
-  // 相对路径统一 '/' 分隔；占位符外层不加引号：Codely 展开时自动 shell 转义（值自带
-  // 单引号），再包双引号会让引号进入路径字面量 → node 报 Cannot find module
+  // 项目级：node -e + CODELY_PROJECT_DIR 环境变量（见文件头「命令写法」）。相对路径统一 '/' 分隔
   const rel = path.relative(projectRootOf(settingsPath), hookPath).split(path.sep).join('/');
-  return 'node $CODELY_PROJECT_DIR/' + rel;
+  return 'node -e "process.env.CHATGRAPHIC_HOOK_AS_MAIN=\'1\';require((process.env.CODELY_PROJECT_DIR||process.cwd())+\'/' + rel + '\')"';
 }
 /* 命中判定：绝对路径形式（旧版兼容）或 $CODELY_PROJECT_DIR 展开后指向同一 hook.js */
 function isOurs(h, hookDir, settingsPath) {
@@ -85,11 +88,16 @@ function isOurs(h, hookDir, settingsPath) {
 function findOursCmd(h, hookDir, settingsPath) {
   const cmd = String((h && h.command) || '');
   if (!cmd.includes('hook.js')) return null;
-  const needle = normSep(path.join(hookDir, 'hook.js'));
+  const hookPath = path.join(hookDir, 'hook.js');
+  const needle = normSep(hookPath);
   if (normSep(cmd).includes(needle)) return cmd; // 旧版绝对路径形式（归一化后比较）
-  if (settingsPath && !isUserSettings(settingsPath) && cmd.includes('$CODELY_PROJECT_DIR')) {
-    const expanded = cmd.split('$CODELY_PROJECT_DIR').join(projectRootOf(settingsPath));
-    if (normSep(expanded).includes(needle)) return cmd;
+  if (settingsPath && !isUserSettings(settingsPath)) {
+    const rel = path.relative(projectRootOf(settingsPath), hookPath).split(path.sep).join('/');
+    if (cmd.includes('$CODELY_PROJECT_DIR')) { // 占位符写法（v0.2.3~v0.2.6，运行时已失效，保留识别供迁移/卸载）
+      const expanded = cmd.split('$CODELY_PROJECT_DIR').join(projectRootOf(settingsPath));
+      if (normSep(expanded).includes(needle)) return cmd;
+    }
+    if (cmd.includes('node -e') && cmd.includes('\'/' + rel + '\'')) return cmd; // node -e 环境变量写法（现行）
   }
   return null;
 }

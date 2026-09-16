@@ -113,7 +113,9 @@ function main() {
   process.exit(0);
 }
 
-if (require.main === module) main();
+/* 直接运行（node hook.js），或经项目级 Hook 命令的 node -e require() 方式加载
+ * （Codely Windows 免 shell 机制；命令先置 CHATGRAPHIC_HOOK_AS_MAIN=1 显式开启） */
+if (require.main === module || process.env.CHATGRAPHIC_HOOK_AS_MAIN === '1') main();
 
 /* ---------- 供测试与二次开发 ---------- */
 module.exports = { resolveWork, resolveTranscriptFallback };
