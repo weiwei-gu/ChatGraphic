@@ -37,4 +37,4 @@ git tag v0.2.0 && git push origin v0.2.0
 
 ## 静态发布（GitHub Pages）
 
-`docs/index.html` 是**产品介绍页**（自包含单文件，直接编辑后提交推送即可，Pages 自动重建）。`docs/.nojekyll` 保证 Pages 只原样发布 `index.html`，不渲染本目录下的其他 md 文档。产品描述源文档（`ChatGraphic产品描述 v0.3.html`）仍保留在仓库根目录作为需求源头，暂不作为 Pages 发布副本。
+`docs/index.html` 是产品描述 v0.3 的**发布副本**：相对源文档（仓库根目录 `ChatGraphic产品描述 v0.3.html`）删除了「投入与目标」「阶段规划」两个内部评审章节及其死样式，并做了少量展示优化（标题/页眉去「内部评审」字样、hero 增加 GitHub 仓库按钮、导航补风险与 FAQ、失效交叉引用清理）。更新产品描述后需**手工同步**发布副本（不再逐字 cp）。`docs/.nojekyll` 保证 Pages 只原样发布 `index.html`，不渲染本目录下的其他 md 文档。
