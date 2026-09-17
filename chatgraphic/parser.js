@@ -68,6 +68,8 @@ function resolveSessionId(raw) {
   if (process.env.CODELY_SESSION_ID) return process.env.CODELY_SESSION_ID;
   const m = String(raw).slice(0, 400).match(/"durableSessionId":"([A-Za-z0-9\-]+)"/); // 实时 JSONL 头
   if (m) return m[1];
+  const cx = String(raw).slice(0, 400).match(/"type":"session_meta","payload":\{"id":"([A-Za-z0-9\-]+)"/); // Codex rollout 头
+  if (cx) return cx[1];
   try { const o = JSON.parse(raw); if (o.tag) return o.tag; } catch (e) {} // auto-save
   return 'manual';
 }
@@ -77,11 +79,14 @@ function loadTranscriptFromRaw(raw) {
   let data;
   try { data = JSON.parse(raw); }
   catch (e) {
-    // JSONL：Codely 实时转录（t:"put" + msg 信封），取 put 记录的 msg
-    data = raw.split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch (e2) { return null; } })
-      .filter(Boolean)
-      .filter(l => l.t === 'put' && l.msg)
-      .map(l => l.msg);
+    // JSONL 容错：逐行解析后按信封分派（Codex rollout / Codely 实时转录）
+    const lines = raw.split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch (e2) { return null; } })
+      .filter(Boolean);
+    if (lines.some(l => l.type === 'session_meta' || l.type === 'response_item')) {
+      data = codexRolloutToHistory(lines); // Codex rollout（~/.codex/sessions/**/rollout-*.jsonl）
+    } else {
+      data = lines.filter(l => l.t === 'put' && l.msg).map(l => l.msg); // Codely 实时转录（t:"put" + msg 信封）
+    }
   }
   let history = null;
   if (Array.isArray(data)) history = data;
@@ -90,6 +95,38 @@ function loadTranscriptFromRaw(raw) {
   else if (data && Array.isArray(data.messages)) history = data.messages;
   if (!history || !history.length) throw new Error('无法识别的转录格式（非 JSON 数组 / clientHistory / history / messages / JSONL）');
   return history;
+}
+/* Codex rollout → 通用 history：取 response_item 记录（event_msg 为其回显，跳过）；
+ * developer/system 为注入内容，跳过；注入式 user 文本（<environment_context> 等）不构成轮次起点；
+ * function_call_output 仅含 call_id，经 function_call 建 call_id→工具名 映射。 */
+const CODEX_INJECTED_RE = /^<(environment_context|user_instructions|permissions|turn_context|AGENTS\.md)/;
+function codexRolloutToHistory(lines) {
+  const callNames = new Map();
+  const out = [];
+  for (const l of lines) {
+    const p = (l && l.type === 'response_item' && l.payload) || null;
+    if (!p) continue;
+    if (p.type === 'message') {
+      const role = p.role === 'assistant' ? 'model' : p.role;
+      if (role !== 'user' && role !== 'model') continue;
+      const parts = (Array.isArray(p.content) ? p.content : [])
+        .map(c => (c && typeof c.text === 'string') ? { text: c.text } : null).filter(Boolean);
+      if (!parts.length) continue;
+      if (role === 'user') {
+        const real = parts.filter(pt => !CODEX_INJECTED_RE.test(String(pt.text).trimStart()));
+        if (!real.length) continue; // 纯注入（环境上下文等），不构成轮次
+        out.push({ role, parts: real });
+      } else out.push({ role, parts });
+    } else if (p.type === 'function_call' && p.name) {
+      callNames.set(p.call_id, p.name);
+      let args = {};
+      try { args = JSON.parse(p.arguments || '{}'); } catch (e) { args = { raw: truncate(String(p.arguments), 80) }; }
+      out.push({ role: 'model', parts: [{ functionCall: { name: p.name, args } }] });
+    } else if (p.type === 'function_call_output') {
+      out.push({ role: 'user', parts: [{ functionResponse: { name: callNames.get(p.call_id) || 'tool', response: { output: p.output } } }] });
+    }
+  }
+  return out;
 }
 function entryRole(entry) {
   if (entry.role === 'user' || entry.role === 'model' || entry.role === 'assistant') {
@@ -298,6 +335,40 @@ function runCodely(payload) {
       try { fs.rmSync(scratch, { recursive: true, force: true }); } catch (e) {}
       if (code === 0) resolve(out);
       else reject(new Error('codely 退出码 ' + code + '；stderr: ' + err.slice(0, 400)));
+    });
+  });
+}
+/* ---------- 同链路解析（Codex 会话）：codex exec 无头运行 ----------
+   「同链路」在 Codex 侧的本义：用用户 Codex 配置的模型/认证（config.toml 的 model），
+   config.json 的 model 不参与路由；引擎由转录格式决定（isCodexRollout）。
+   exec 为 agent 形态：stdin 必须立即关闭（读附加输入直到 EOF）；--skip-git-repo-check
+   适配 tmpdir cwd；stdout 即最终回复（extractJson 括号配对可容忍少量过程输出）。 */
+function isCodexRollout(raw) {
+  return /"type":"(session_meta|response_item)"/.test(String(raw).slice(0, 400));
+}
+function runCodex(payload) {
+  return new Promise((resolve, reject) => {
+    const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'chatgraphic-parse-'));
+    const child = spawn('codex', ['exec', '--skip-git-repo-check', payload], {
+      cwd: scratch,
+      env: Object.assign({}, process.env, { CHATGRAPHIC_CHILD: '1' }),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+    child.stdin.end(); // exec 从 stdin 读附加输入直到 EOF，必须立即关闭
+    let out = '', err = '';
+    child.stdout.on('data', d => { out += d; });
+    child.stderr.on('data', d => { err += d; });
+    const timer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch (e) {}
+      reject(new Error('解析超时（' + CFG.parseTimeoutMs + 'ms）'));
+    }, CFG.parseTimeoutMs);
+    child.on('error', e => { clearTimeout(timer); reject(e); });
+    child.on('close', code => {
+      clearTimeout(timer);
+      try { fs.rmSync(scratch, { recursive: true, force: true }); } catch (e) {}
+      if (code === 0) resolve(out);
+      else reject(new Error('codex exec 退出码 ' + code + '；stderr: ' + err.slice(0, 400)));
     });
   });
 }
@@ -520,13 +591,15 @@ async function main() {
     payloadFull = buildPrompt(lean, sd);
 
     // 尝试序列：增量失败 / 疑似丢节点 → 回退全量（全量保留一次重试）
+    // 引擎路由（同链路）：Codex rollout → codex exec（Codex 配置的模型/认证）；其余 → codely -p
+    const engine = isCodexRollout(raw) ? 'codex' : 'codely';
     const attempts = mode === 'incremental' ? ['incremental', 'full', 'full'] : ['full', 'full'];
     let norm = null, usedMode = mode, lastErr = null, diff = null;
     for (let i = 0; i < attempts.length && !norm; i++) {
       const m = attempts[i];
       try {
-        log('parser: [' + sessionId + '] 调用 codely（' + m + (i > 0 ? ' · 回退' : '') + '）');
-        const out = await runCodely(m === 'incremental' ? payloadInc : payloadFull);
+        log('parser: [' + sessionId + '] 调用 ' + engine + (engine === 'codex' ? ' exec' : '') + '（' + m + (i > 0 ? ' · 回退' : '') + '）');
+        const out = await (engine === 'codex' ? runCodex(m === 'incremental' ? payloadInc : payloadFull) : runCodely(m === 'incremental' ? payloadInc : payloadFull));
         const n2 = normalize(extractJson(out), rounds.length);
         const nodes = normNodes(n2);
         if (prevGraph) {
@@ -568,7 +641,7 @@ module.exports = {
   resolveWork, resolveSessionId, loadTranscriptFromRaw, entryRole, entryParts,
   buildRounds, roundBlocks, renderLean, viewRound,
   buildPrompt, buildPromptIncremental, extractJson, normalize, writeGraph,
-  resolveParseMode, computeGraphDiff, normNodes,
+  resolveParseMode, computeGraphDiff, normNodes, codexRolloutToHistory, isCodexRollout,
   codelyEntryFromDir, resolveCodelySpawn,
   __setConfig, __resetConfig
 };
