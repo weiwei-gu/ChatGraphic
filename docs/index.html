@@ -217,6 +217,35 @@
     display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;
     color:var(--faint);font-size:12.5px;
   }
+  /* ===== Demo grow animation：产品形态演示图从左到右循环生长（14s 一轮） ===== */
+  .mockup-card svg .cg-n{transform-box:fill-box;transform-origin:50% 50%;animation:cgN 14s infinite both;animation-delay:calc(var(--d,0)*1s)}
+  .mockup-card svg .cg-e path{stroke-dasharray:520;stroke-dashoffset:520;animation:cgE 14s infinite both;animation-delay:calc(var(--d,0)*1s)}
+  .mockup-card svg .cg-le{animation:cgF 14s infinite both;animation-delay:calc(var(--d,0)*1s)}
+  @keyframes cgN{
+    0%{opacity:0;transform:translateY(7px) scale(.94)}
+    3%{opacity:1;transform:none}
+    86%{opacity:1;transform:none}
+    92%{opacity:0;transform:translateY(4px) scale(.97)}
+    100%{opacity:0;transform:translateY(7px) scale(.94)}
+  }
+  @keyframes cgE{
+    0%{stroke-dashoffset:520;opacity:0}
+    2%{opacity:1}
+    9%{stroke-dashoffset:0}
+    86%{stroke-dashoffset:0;opacity:1}
+    92%{stroke-dashoffset:520;opacity:0}
+    100%{stroke-dashoffset:520;opacity:0}
+  }
+  @keyframes cgF{
+    0%{opacity:0}
+    6%{opacity:1}
+    86%{opacity:1}
+    92%{opacity:0}
+    100%{opacity:0}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .mockup-card svg .cg-n,.mockup-card svg .cg-e path,.mockup-card svg .cg-le{animation:none;opacity:1;transform:none;stroke-dashoffset:0}
+  }
 </style>
 </head>
 <body>
@@ -407,94 +436,99 @@
           <text x="210" y="110" font-size="11" fill="#94A3B8">从第一句对话开始 · 导图随对话实时生长</text>
 
           <!-- ===== conversation map : branches ===== -->
-          <g fill="none" stroke-linecap="round">
-            <!-- root -> categories -->
+          <!-- ===== conversation map : branches（分阶段生长动画，--d 为出现时刻/秒） ===== -->
+          <g class="cg-e" style="--d:.5" fill="none" stroke-linecap="round">
             <path d="M342 348 C372 330, 360 192, 380 174" stroke="#8B5CF6" stroke-width="4.5" opacity=".9"/>
             <path d="M342 356 C366 352, 362 306, 380 300" stroke="#D97706" stroke-width="4" opacity=".85"/>
             <path d="M342 372 C370 384, 360 460, 380 468" stroke="#16A34A" stroke-width="4" opacity=".85"/>
             <path d="M342 380 C374 400, 358 542, 380 556" stroke="#94A3B8" stroke-width="4" opacity=".85"/>
-            <!-- plan discussion -> two options -->
+          </g>
+          <g class="cg-e" style="--d:1.5" fill="none" stroke-linecap="round">
             <path d="M476 168 C486 162, 490 146, 500 140" stroke="#8B5CF6" stroke-width="2.6"/>
             <path d="M476 176 C486 182, 490 200, 500 204" stroke="#94A3B8" stroke-width="2.2"/>
-            <!-- chosen plan -> tasks -->
-            <path d="M650 136 C660 130, 666 112, 676 109" stroke="#2563EB" stroke-width="2.6"/>
-            <path d="M650 141 C660 143, 666 155, 676 155" stroke="#2563EB" stroke-width="2.6"/>
-            <path d="M650 145 C660 158, 664 196, 676 201" stroke="#2563EB" stroke-width="2.6"/>
-            <!-- decision children -->
+          </g>
+          <g class="cg-e" style="--d:2.2" fill="none" stroke-linecap="round">
             <path d="M476 296 C486 292, 490 286, 500 285" stroke="#D97706" stroke-width="2.2"/>
             <path d="M476 305 C486 308, 490 324, 500 325" stroke="#D97706" stroke-width="2.2"/>
-            <!-- file children -->
+          </g>
+          <g class="cg-e" style="--d:2.8" fill="none" stroke-linecap="round">
             <path d="M476 465 C486 458, 490 442, 500 440" stroke="#16A34A" stroke-width="2.2"/>
             <path d="M476 471 C486 474, 490 480, 500 480" stroke="#16A34A" stroke-width="2.2"/>
             <path d="M476 476 C486 486, 490 516, 500 520" stroke="#16A34A" stroke-width="2.2"/>
-            <!-- question child -->
+          </g>
+          <g class="cg-e" style="--d:3.4" fill="none" stroke-linecap="round">
             <path d="M476 558 C484 558, 492 559, 500 559" stroke="#94A3B8" stroke-width="2.2"/>
+          </g>
+          <g class="cg-e" style="--d:3.6" fill="none" stroke-linecap="round">
+            <path d="M650 136 C660 130, 666 112, 676 109" stroke="#2563EB" stroke-width="2.6"/>
+            <path d="M650 141 C660 143, 666 155, 676 155" stroke="#2563EB" stroke-width="2.6"/>
+            <path d="M650 145 C660 158, 664 196, 676 201" stroke="#2563EB" stroke-width="2.6"/>
           </g>
 
           <!-- root : the first message of the conversation -->
-          <polygon points="206,342 194,352 206,362" fill="#0F172A"/>
+<g class="cg-n" style="--d:0">          <polygon points="206,342 194,352 206,362" fill="#0F172A"/>
           <rect x="206" y="330" width="136" height="68" rx="12" fill="#0F172A"/>
           <circle cx="222" cy="330" r="11" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
           <text x="222" y="333.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">我</text>
           <text x="238" y="348" font-size="8.5" font-weight="700" fill="#93C5FD">起点 · 第 1 句对话</text>
           <text x="218" y="366" font-size="10.5" font-weight="600" fill="#FFFFFF">帮我重构登录模块，</text>
           <text x="218" y="382" font-size="10.5" font-weight="600" fill="#E2E8F0">接入 OAuth2.0</text>
-          <text x="206" y="412" font-size="8.5" fill="#94A3B8">✦ AI 从对话自动生成</text>
+          <text x="206" y="412" font-size="8.5" fill="#94A3B8">✦ AI 从对话自动生成</text></g>
 
           <!-- 方案讨论 -->
-          <rect x="380" y="156" width="96" height="32" rx="16" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="1.6"/>
-          <text x="428" y="176" text-anchor="middle" font-size="12.5" font-weight="700" fill="#6D28D9">方案讨论 · 2</text>
+<g class="cg-n" style="--d:0.9">          <rect x="380" y="156" width="96" height="32" rx="16" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="1.6"/>
+          <text x="428" y="176" text-anchor="middle" font-size="12.5" font-weight="700" fill="#6D28D9">方案讨论 · 2</text></g>
 
-          <rect x="500" y="116" width="150" height="48" rx="10" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.6"/>
+<g class="cg-n" style="--d:1.9">          <rect x="500" y="116" width="150" height="48" rx="10" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.6"/>
           <circle cx="516" cy="132" r="7" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.3"/>
           <path d="M512.8 132.3 l2.3 2.3 l4.6 -4.6" fill="none" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round"/>
           <text x="530" y="136" font-size="10.5" font-weight="700" fill="#0F172A">JWT + RefreshToken</text>
-          <text x="530" y="152" font-size="8.5" font-weight="700" fill="#16A34A">✓ 最终选择 · 14:02 确定</text>
+          <text x="530" y="152" font-size="8.5" font-weight="700" fill="#16A34A">✓ 最终选择 · 14:02 确定</text></g>
 
-          <rect x="500" y="180" width="150" height="48" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.4"/>
+<g class="cg-n" style="--d:2.05">          <rect x="500" y="180" width="150" height="48" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.4"/>
           <circle cx="516" cy="196" r="7" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.3"/>
           <path d="M513.2 193.2 l5.6 5.6 M518.8 193.2 l-5.6 5.6" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
           <text x="530" y="200" font-size="10.5" font-weight="600" fill="#64748B">Session 方案</text>
-          <text x="530" y="216" font-size="8.5" fill="#94A3B8">✕ 已否决 · 移动端受限</text>
+          <text x="530" y="216" font-size="8.5" fill="#94A3B8">✕ 已否决 · 移动端受限</text></g>
 
           <!-- tasks under the chosen plan -->
-          <rect x="676" y="94" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
+<g class="cg-n" style="--d:4">          <rect x="676" y="94" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
           <circle cx="690" cy="109" r="6.5" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.2"/>
           <path d="M687 109 l2.2 2.2 l4 -4" fill="none" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round"/>
           <text x="702" y="113" font-size="10.5" font-weight="600" fill="#0F172A">接入 OAuth2.0</text>
-          <text x="830" y="113" text-anchor="end" font-size="8.5" font-weight="600" fill="#16A34A">已完成</text>
-          <rect x="676" y="140" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
+          <text x="830" y="113" text-anchor="end" font-size="8.5" font-weight="600" fill="#16A34A">已完成</text></g>
+<g class="cg-n" style="--d:4.15">          <rect x="676" y="140" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
           <circle cx="690" cy="155" r="6.5" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.2"/>
           <circle cx="690" cy="155" r="1.8" fill="#2563EB"/>
           <text x="702" y="159" font-size="10.5" font-weight="600" fill="#0F172A">修复刷新竞态</text>
-          <text x="830" y="159" text-anchor="end" font-size="8.5" font-weight="600" fill="#2563EB">进行中</text>
-          <rect x="676" y="186" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
+          <text x="830" y="159" text-anchor="end" font-size="8.5" font-weight="600" fill="#2563EB">进行中</text></g>
+<g class="cg-n" style="--d:4.3">          <rect x="676" y="186" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
           <circle cx="690" cy="201" r="6.5" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.2"/>
           <circle cx="690" cy="201" r="2.2" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
           <text x="702" y="205" font-size="10.5" font-weight="600" fill="#64748B">补充集成测试</text>
-          <text x="830" y="205" text-anchor="end" font-size="8.5" font-weight="600" fill="#94A3B8">待办</text>
+          <text x="830" y="205" text-anchor="end" font-size="8.5" font-weight="600" fill="#94A3B8">待办</text></g>
 
           <!-- live : node being parsed right now -->
-          <path d="M650 150 C662 170, 666 232, 676 246" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-dasharray="5 4"/>
-          <rect x="676" y="232" width="166" height="30" rx="8" fill="#F8FAFC" stroke="#60A5FA" stroke-dasharray="5 3"/>
+          <path class="cg-le" style="--d:4.6" d="M650 150 C662 170, 666 232, 676 246" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-dasharray="5 4"/>
+<g class="cg-n" style="--d:4.9">          <rect x="676" y="232" width="166" height="30" rx="8" fill="#F8FAFC" stroke="#60A5FA" stroke-dasharray="5 3"/>
           <circle cx="692" cy="247" r="6.5" fill="none" stroke="#60A5FA" stroke-width="1.6" stroke-dasharray="20 8" stroke-linecap="round" class="live-spin"/>
           <text x="706" y="251" font-size="10" font-weight="600" fill="#3B82F6">正在解析新回复…</text>
-          <text x="830" y="251" text-anchor="end" font-size="8.5" font-weight="700" fill="#16A34A" class="live-pulse">● LIVE</text>
+          <text x="830" y="251" text-anchor="end" font-size="8.5" font-weight="700" fill="#16A34A" class="live-pulse">● LIVE</text></g>
 
           <!-- 决策记录 -->
-          <rect x="380" y="284" width="96" height="32" rx="16" fill="#FFF7ED" stroke="#D97706" stroke-width="1.4"/>
-          <text x="428" y="304" text-anchor="middle" font-size="12.5" font-weight="700" fill="#B45309">决策记录 · 2</text>
-          <rect x="500" y="270" width="150" height="30" rx="8" fill="#FFFFFF" stroke="#FDE68A"/>
+<g class="cg-n" style="--d:1">          <rect x="380" y="284" width="96" height="32" rx="16" fill="#FFF7ED" stroke="#D97706" stroke-width="1.4"/>
+          <text x="428" y="304" text-anchor="middle" font-size="12.5" font-weight="700" fill="#B45309">决策记录 · 2</text></g>
+<g class="cg-n" style="--d:2.5">          <rect x="500" y="270" width="150" height="30" rx="8" fill="#FFFFFF" stroke="#FDE68A"/>
           <polygon points="514,285 520,289 514,293 508,289" fill="#D97706"/>
           <text x="528" y="289" font-size="10" font-weight="600" fill="#0F172A">Token 存 httpOnly Cookie</text>
           <rect x="500" y="310" width="150" height="30" rx="8" fill="#FFFFFF" stroke="#FDE68A"/>
           <polygon points="514,325 520,329 514,333 508,329" fill="#D97706"/>
-          <text x="528" y="329" font-size="10" font-weight="600" fill="#0F172A">刷新窗口 15 分钟</text>
+          <text x="528" y="329" font-size="10" font-weight="600" fill="#0F172A">刷新窗口 15 分钟</text></g>
 
           <!-- 文件变更 -->
-          <rect x="380" y="454" width="96" height="32" rx="16" fill="#ECFDF5" stroke="#16A34A" stroke-width="1.4"/>
-          <text x="428" y="474" text-anchor="middle" font-size="12.5" font-weight="700" fill="#15803D">文件变更 · 3</text>
-          <g font-family="ui-monospace,Menlo,monospace">
+<g class="cg-n" style="--d:1.1">          <rect x="380" y="454" width="96" height="32" rx="16" fill="#ECFDF5" stroke="#16A34A" stroke-width="1.4"/>
+          <text x="428" y="474" text-anchor="middle" font-size="12.5" font-weight="700" fill="#15803D">文件变更 · 3</text></g>
+          <g font-family="ui-monospace,Menlo,monospace" class="cg-n" style="--d:3.1">
             <rect x="500" y="425" width="150" height="30" rx="8" fill="#FFFFFF" stroke="#BBF7D0"/>
             <rect x="500" y="431" width="3" height="18" fill="#16A34A"/>
             <text x="510" y="444" font-size="9.5" fill="#334155">auth/login.ts +120 −18</text>
@@ -507,10 +541,10 @@
           </g>
 
           <!-- 待确认 -->
-          <rect x="380" y="544" width="96" height="32" rx="16" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.4"/>
-          <text x="428" y="564" text-anchor="middle" font-size="12.5" font-weight="700" fill="#64748B">待确认 · 1</text>
-          <rect x="500" y="545" width="150" height="30" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-dasharray="4 3"/>
-          <text x="575" y="564" text-anchor="middle" font-size="10.5" fill="#64748B">需要单点登录吗？</text>
+<g class="cg-n" style="--d:1.2">          <rect x="380" y="544" width="96" height="32" rx="16" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.4"/>
+          <text x="428" y="564" text-anchor="middle" font-size="12.5" font-weight="700" fill="#64748B">待确认 · 1</text></g>
+<g class="cg-n" style="--d:3.6">          <rect x="500" y="545" width="150" height="30" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-dasharray="4 3"/>
+          <text x="575" y="564" text-anchor="middle" font-size="10.5" fill="#64748B">需要单点登录吗？</text></g>
 
           <text x="210" y="604" font-size="9.5" fill="#CBD5E1">导图沿对话脉络生长：方案讨论 → 最终选择 → 对应任务 → 决策与变更</text>
           <text x="830" y="604" text-anchor="end" font-size="9.5" font-weight="600" fill="#16A34A" class="live-pulse">● LIVE · 导图与对话实时同步</text>
