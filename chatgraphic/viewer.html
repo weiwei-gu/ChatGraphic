@@ -160,6 +160,7 @@
   body.embed .embed-only{display:inline-block}
   body.embed .app{grid-template-columns:1fr}
   body.embed .side-left,body.embed .side-right{
+    display:flex; /* 覆盖媒体查询的 display:none（≤1100px 隐藏详情、≤760px 隐藏会话），抽屉在任何面板宽度都渲染 */
     position:fixed;top:52px;bottom:0;width:280px;max-width:85vw;margin:0;z-index:30;
     box-shadow:0 8px 28px rgba(15,23,42,.14);transition:transform .25s ease;
   }
