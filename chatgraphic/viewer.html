@@ -571,9 +571,8 @@ stage.addEventListener('pointerup',e=>{
   if(!drag)return;
   if(!drag.moved&&drag.node){const id=[...nodes.entries()].find(([,n])=>n.el===drag.node);if(id)inspect(nodes.get(id[0]))}
   else if(drag.moved){userMoved=true}
-  else if(EMBED){ /* 内嵌模式：点画布空白处收起抽屉 */
-    $('.side-left').classList.remove('open');$('.side-right').classList.remove('open');
-    $('#embedSessBtn').classList.remove('on');$('#embedInspBtn').classList.remove('on');
+  else if(EMBED){ /* 内嵌模式：点画布空白处只收起详情抽屉，会话抽屉保持当前状态 */
+    $('.side-right').classList.remove('open');$('#embedInspBtn').classList.remove('on');
   }
   drag=null;
 });
@@ -819,6 +818,7 @@ if(EMBED){
   document.querySelectorAll('.drawer-x').forEach(b=>b.addEventListener('click',()=>{
     document.querySelector(b.dataset.drawer).classList.remove('open');syncBtns();
   }));
+  $('.side-left').classList.add('open');syncBtns(); /* 内嵌模式：会话抽屉默认展开 */
 }
 </script>
 </body>
