@@ -70,6 +70,8 @@ function resolveSessionId(raw) {
   if (m) return m[1];
   const cx = String(raw).slice(0, 400).match(/"type":"session_meta","payload":\{"id":"([A-Za-z0-9\-]+)"/); // Codex rollout 头
   if (cx) return cx[1];
+  const cl = String(raw).slice(0, 2000).match(/"session_?[Ii]d":"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/); // Claude 会话转录头
+  if (cl) return cl[1];
   try { const o = JSON.parse(raw); if (o.tag) return o.tag; } catch (e) {} // auto-save
   return 'manual';
 }
@@ -79,11 +81,13 @@ function loadTranscriptFromRaw(raw) {
   let data;
   try { data = JSON.parse(raw); }
   catch (e) {
-    // JSONL 容错：逐行解析后按信封分派（Codex rollout / Codely 实时转录）
+    // JSONL 容错：逐行解析后按信封分派（Codex rollout / Claude 会话转录 / Codely 实时转录）
     const lines = raw.split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch (e2) { return null; } })
       .filter(Boolean);
     if (lines.some(l => l.type === 'session_meta' || l.type === 'response_item')) {
       data = codexRolloutToHistory(lines); // Codex rollout（~/.codex/sessions/**/rollout-*.jsonl）
+    } else if (isClaudeTranscript(raw)) {
+      data = claudeTranscriptToHistory(lines); // Claude Code 会话转录（~/.claude/projects/<项目slug>/<会话id>.jsonl）
     } else {
       data = lines.filter(l => l.t === 'put' && l.msg).map(l => l.msg); // Codely 实时转录（t:"put" + msg 信封）
     }
@@ -124,6 +128,51 @@ function codexRolloutToHistory(lines) {
       out.push({ role: 'model', parts: [{ functionCall: { name: p.name, args } }] });
     } else if (p.type === 'function_call_output') {
       out.push({ role: 'user', parts: [{ functionResponse: { name: callNames.get(p.call_id) || 'tool', response: { output: p.output } } }] });
+    }
+  }
+  return out;
+}
+/* Claude Code 会话转录 → 通用 history：只取 type=user/assistant 的 message.content；
+ * 跳过 isMeta / isSidechain（子代理旁路，其结果经主线程 tool_result 回流不丢信息）与
+ * mode/attachment/system/ai-title 等噪音行；<command-name>/<system-reminder> 等注入不构成轮次；
+ * tool_result 仅含 tool_use_id，经 tool_use 建 id→工具名 映射。 */
+const CLAUDE_NOISE_RE = /^<(command-name|command-message|command-args|local-command|system-reminder|bash-input|bash-output|user-prompt-summar)/;
+function isClaudeTranscript(raw) {
+  const head = String(raw).slice(0, 8000);
+  return /"type":"(user|assistant)"/.test(head) && /"sessionId"/.test(head);
+}
+function claudeTranscriptToHistory(lines) {
+  const callNames = new Map();
+  const out = [];
+  for (const l of lines) {
+    if (!l || (l.type !== 'user' && l.type !== 'assistant') || l.isMeta || l.isSidechain) continue;
+    const c0 = l.message && l.message.content;
+    const content = Array.isArray(c0) ? c0 : (typeof c0 === 'string' ? [{ type: 'text', text: c0 }] : []);
+    if (!content.length) continue;
+    if (l.type === 'user') {
+      const parts = [];
+      for (const c of content) {
+        if (c.type === 'tool_result') {
+          let rc = c.content;
+          if (Array.isArray(rc)) rc = rc.map(x => x && x.text).filter(Boolean).join('\n');
+          if (rc == null || rc === '') rc = l.toolUseResult != null ? JSON.stringify(l.toolUseResult).slice(0, 200) : '';
+          parts.push({ functionResponse: { name: callNames.get(c.tool_use_id) || 'tool', response: { output: rc } } });
+        } else if (c.type === 'text' && typeof c.text === 'string') {
+          parts.push({ text: c.text });
+        }
+      }
+      const real = parts.filter(p => p.functionResponse || !CLAUDE_NOISE_RE.test(String(p.text || '').trimStart()));
+      if (real.length) out.push({ role: 'user', parts: real });
+    } else {
+      const parts = [];
+      for (const c of content) {
+        if (c.type === 'text' && typeof c.text === 'string' && c.text.trim()) parts.push({ text: c.text });
+        else if (c.type === 'tool_use' && c.name) {
+          callNames.set(c.id, c.name);
+          parts.push({ functionCall: { name: c.name, args: c.input || {} } });
+        } // thinking 块不上图
+      }
+      if (parts.length) out.push({ role: 'model', parts });
     }
   }
   return out;
@@ -372,6 +421,34 @@ function runCodex(payload) {
     });
   });
 }
+/* ---------- 同链路解析（Claude 会话）：claude -p 无头运行 ----------
+   用用户 Claude Code 配置的模型/认证（~/.claude/settings.json 的 env/model），
+   config.json 的 model 不参与；引擎由转录格式决定（isClaudeTranscript）。 */
+function runClaude(payload) {
+  return new Promise((resolve, reject) => {
+    const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'chatgraphic-parse-'));
+    const child = spawn('claude', ['-p', payload, '--output-format', 'text'], {
+      cwd: scratch,
+      env: Object.assign({}, process.env, { CHATGRAPHIC_CHILD: '1' }),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+    let out = '', err = '';
+    child.stdout.on('data', d => { out += d; });
+    child.stderr.on('data', d => { err += d; });
+    const timer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch (e) {}
+      reject(new Error('解析超时（' + CFG.parseTimeoutMs + 'ms）'));
+    }, CFG.parseTimeoutMs);
+    child.on('error', e => { clearTimeout(timer); reject(e); });
+    child.on('close', code => {
+      clearTimeout(timer);
+      try { fs.rmSync(scratch, { recursive: true, force: true }); } catch (e) {}
+      if (code === 0) resolve(out);
+      else reject(new Error('claude -p 退出码 ' + code + '；stderr: ' + err.slice(0, 400)));
+    });
+  });
+}
 function extractJson(text) {
   if (!text || !text.trim()) throw new Error('空响应');
   let t = text.trim();
@@ -591,15 +668,17 @@ async function main() {
     payloadFull = buildPrompt(lean, sd);
 
     // 尝试序列：增量失败 / 疑似丢节点 → 回退全量（全量保留一次重试）
-    // 引擎路由（同链路）：Codex rollout → codex exec（Codex 配置的模型/认证）；其余 → codely -p
-    const engine = isCodexRollout(raw) ? 'codex' : 'codely';
+    // 引擎路由（同链路）：Codex rollout → codex exec；Claude 会话转录 → claude -p；其余 → codely -p
+    const engine = isCodexRollout(raw) ? 'codex' : (isClaudeTranscript(raw) ? 'claude' : 'codely');
     const attempts = mode === 'incremental' ? ['incremental', 'full', 'full'] : ['full', 'full'];
     let norm = null, usedMode = mode, lastErr = null, diff = null;
     for (let i = 0; i < attempts.length && !norm; i++) {
       const m = attempts[i];
       try {
-        log('parser: [' + sessionId + '] 调用 ' + engine + (engine === 'codex' ? ' exec' : '') + '（' + m + (i > 0 ? ' · 回退' : '') + '）');
-        const out = await (engine === 'codex' ? runCodex(m === 'incremental' ? payloadInc : payloadFull) : runCodely(m === 'incremental' ? payloadInc : payloadFull));
+        const engineCall = { codex: runCodex, claude: runClaude, codely: runCodely }[engine];
+        const engineTag = { codex: 'codex exec', claude: 'claude -p', codely: 'codely' }[engine];
+        log('parser: [' + sessionId + '] 调用 ' + engineTag + '（' + m + (i > 0 ? ' · 回退' : '') + '）');
+        const out = await engineCall(m === 'incremental' ? payloadInc : payloadFull);
         const n2 = normalize(extractJson(out), rounds.length);
         const nodes = normNodes(n2);
         if (prevGraph) {
@@ -642,6 +721,7 @@ module.exports = {
   buildRounds, roundBlocks, renderLean, viewRound,
   buildPrompt, buildPromptIncremental, extractJson, normalize, writeGraph,
   resolveParseMode, computeGraphDiff, normNodes, codexRolloutToHistory, isCodexRollout,
+  claudeTranscriptToHistory, isClaudeTranscript,
   codelyEntryFromDir, resolveCodelySpawn,
   __setConfig, __resetConfig
 };

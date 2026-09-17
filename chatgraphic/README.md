@@ -58,6 +58,22 @@ node chatgraphic/codex-hook.js ~/.codex/sessions/2026/09/06/rollout-xxxx-<thread
 - **转录适配**：parser 自动识别 Codex rollout 格式（跳过 developer/环境注入与 event_msg 回显；工具名经 call_id 映射）；会话 id = thread-id
 - **注意**：`config.toml` 的 `notify` 已被其他程序占用时不覆盖（告警提示手动处理）；数据目录规则与 Codely 相同；`config.json` 的 `"enabled": false` 同样一键关闭两端；Codex 新版 hooks 系统（0.145+）只拦截工具调用、无轮次结束事件，故选 notify 通道
 
+## Claude Code 支持（实验）
+
+ChatGraphic 也能长出 **Claude Code** 会话的导图：每轮响应结束（Stop 事件）时，Claude Code 以 JSON 经 stdin 调用 Hook 命令，借此触发同一套解析链路。
+
+```bash
+# 注册（幂等写入 ~/.claude/settings.json 的 hooks.Stop；--uninstall 移除 / --status 查看）
+node chatgraphic/install-claude.js
+
+# 之后正常使用 Claude Code —— 每轮结束自动解析出图；历史会话可手动补跑：
+node chatgraphic/claude-hook.js ~/.claude/projects/<项目slug>/<会话id>.jsonl
+```
+
+- **链路**：Stop Hook → `claude-hook.js`（stdin payload 自带 transcript_path，缺失时回退搜索 projects 树；SubagentStop 等其他事件一律忽略）→ 同一套 `parser.js` → **引擎路由（同链路）**：Claude 会话用 `claude -p` 解析（你 Claude Code 配置的模型/认证）→ 同一个 viewer
+- **转录适配**：parser 自动识别 Claude 转录格式（跳过 isMeta / isSidechain 子代理旁路与 mode/attachment 等噪音行；`<command-name>`/`<system-reminder>` 等注入不构成轮次；工具名经 tool_use_id 映射）；会话 id = session_id
+- **注意**：Claude 的 hooks 是数组结构——与他人既有 Stop Hook 并存追加互不影响（区别于 Codex notify 的单槽互斥）；`config.json` 的 `"enabled": false` 一键关闭全部触发端
+
 ## 手动补跑历史会话（复盘场景）
 
 对任意 auto-save 转录或实时转录 JSONL 生成导图：
@@ -75,7 +91,8 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 | 解析成本 | **自动增量（v0.2.0）**：同会话第二次起仅发送「图状态摘要 + 新增轮次」，实测输入从 38K 降到 0.4K 字符、耗时约 1/4，成本近似常数不再随会话线性涨；首次 / 转录被压缩 / 增量失败或疑似丢节点 → 自动回退全量；模型默认 `codely-flash` |
 | 转录上限 | 单轮文本截断 `maxTurnChars`；总载荷上限 `maxTotalLeanChars`，超限保头保尾略去中段（解析器会在「待确认」里如实标注） |
 | 一键关闭 | `chatgraphic/config.json` 里 `"enabled": false`（Hook 立即静默跳过）；彻底移除 Hook 则执行 `node chatgraphic/install.js --uninstall` |
-| 换模型 | Codely 引擎：`config.json` 的 `"model"` 改为任意已配置模型 id（如 `codely-core` 更强但更慢更贵）；Codex 引擎：用你 `~/.codex/config.toml` 配置的模型（`config.json` 的 `model` 不参与） |
+| 换模型 | Codely 引擎：`config.json` 的 `"model"` 改为任意已配置模型 id（如 `codely-core` 更强但更慢更贵）；Codex 引擎：用你 `~/.codex/config.toml` 配置的模型；Claude 引擎：用你 `~/.claude/settings.json` 配置的模型（后两者的 `config.json` 的 `model` 均不参与） |
+| 解析超时 | `parseTimeoutMs` 默认 240 秒/次（失败自动重试一次）。Claude/Codex 引擎走各自代理时大载荷可能偏慢：超长会话（转录 >1MB）可在 `config.json` 调大该值（如 600000） |
 | 观测 | `chatgraphic/work/hook.log`（全链路日志）、`status.json`（当前解析状态）、`version.txt`（导图版本） |
 
 ## 故障排查
@@ -93,12 +110,14 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 |---|---|
 | `~/.codely-cli/settings.json`（用户级） | 由 `chatgraphic/install.js` 注册的 AfterAgent Hook（对所有项目生效，按项目信任） |
 | `chatgraphic/hook.js` | 触发器：防递归 / 去重 / 取代旧解析 / 异步派发，毫秒级退出 |
-| `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL / Codex rollout 容错）→ 精简 → 同链路解析（引擎路由：Codex 会话 `codex exec`、其余 `codely -p`）→ graph.json；v0.2.0 起支持增量解析（滚动窗口 + 图状态摘要，全量兜底） |
+| `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL / Codex rollout / Claude 转录 容错）→ 精简 → 同链路解析（引擎路由：Claude 会话 `claude -p`、Codex 会话 `codex exec`、其余 `codely -p`）→ graph.json；v0.2.0 起支持增量解析（滚动窗口 + 图状态摘要，全量兜底） |
 | `chatgraphic/parse-prompt.md` | 解析提示词：分型 + 三问准入 + 置信分级 + 严格 JSON schema + 上一版 id 稳定性 |
 | `chatgraphic/serve.js` | 零依赖本地服务：viewer / graph.json / transcript.json / version / status |
 | `chatgraphic/install.js` | 用户级 Hook 注册/移除（`--uninstall` / `--status`），扩展安装方式配套 |
 | `chatgraphic/codex-hook.js` | Codex notify 触发器：`agent-turn-complete` → 按 thread-id 定位 rollout → 同款秒退/去重/取代旧解析/派发 |
 | `chatgraphic/install-codex.js` | Codex notify 注册/移除（写入 `~/.codex/config.toml`，顶层键插到首个表头前、幂等、他人占用不覆盖） |
+| `chatgraphic/claude-hook.js` | Claude Code Stop Hook 触发器：stdin JSON（transcript_path + session_id）→ 同款秒退/去重/取代旧解析/派发 |
+| `chatgraphic/install-claude.js` | Claude Stop Hook 注册/移除（写入 `~/.claude/settings.json`，数组并存追加、幂等、他人条目保留） |
 | `chatgraphic/viewer.html` | 只读导图：分层布局、生长动画、节点回链原文、拖拽缩放、导出 PNG/Markdown |
 | `chatgraphic/test/` | 47 个离线测试用例（`npm test`，node --test；不调用 codely/LLM） |
 | `chatgraphic/work/` | 运行时产物：`sessions/<会话id>/`（graph.json / transcript.json / status.json …）、`current.json`（最新会话指针）、`hook.log`（全链路日志） |
