@@ -10,6 +10,12 @@ npm run check    # hook / parser / serve / install / codex-hook / install-codex 
 - 测试入口为 `scripts/run-tests.js`（显式列出 `*.test.js` 交给 `--test`）——不写 glob 是因为 Windows 的 cmd 不展开通配符、Node 20 的 `--test` 也无原生 glob，曾致 CI 的 windows·Node 20 格常红
 - 测试覆盖：转录归一化（Codely 三种格式 / Codex rollout / Claude 转录）、轮次构建与精简、归一化规则、JSON 提取、会话定位与引擎路由识别、数据目录规则、Hook 守卫/去重/取代旧解析（fake-parser 替身）、notify 与 Stop payload 解析、config.toml（TOML 顶层键插入）与 settings.json（hooks 数组并存）注册、install 幂等与还原、serve 路由与端口避让、手动模式端到端（stub parser）
 
+## 子模块（TerminalServer）
+
+- 克隆须带 `--recurse-submodules`（或事后 `git submodule update --init`）；**main 分支不接受直接推送，一律分支 + PR 合并**
+- 其改动在子仓库内提交并经 PR 合并（先子模块后父仓库），父仓库随后提交一次指针更新
+- 子模块独立测试：`cd TerminalServer && ./venv/bin/python -m pytest tests/ -q`（34 个用例：登录鉴权 / 上传下载 / 导图数据路由 / workspace 初始化；venv 需 `python3 -m venv venv && pip install -r requirements.txt`，不入库）
+
 ## CI
 
 `.github/workflows/ci.yml`：push / PR 自动跑测试矩阵（ubuntu + macos + windows × Node 20/24）。
@@ -22,13 +28,14 @@ npm run check    # hook / parser / serve / install / codex-hook / install-codex 
 2. **测试**：必须全绿
 3. **创建 GitHub Release**（`gh release create --generate-notes`）
 
-发版三步：
+发版步骤（main 走 PR 合并，版本 bump 随功能分支进 main）：
 
 ```bash
-# 1. 同步修改 package.json 与 gemini-extension.json 的 version
-git commit -am "release: v0.2.0" && git push
-# 2. 打 tag 并推送（之后全自动）
-git tag v0.2.0 && git push origin v0.2.0
+# 1. 在功能分支上同步修改 package.json 与 gemini-extension.json 的 version，走 PR 合并进 main
+# 2. 合并后从 main 打 tag 并推送（之后全自动）
+git checkout main && git pull
+git tag v0.3.0 && git push origin v0.3.0
+# 3. TerminalServer 子模块独立发版：先合其分支 → 打 v1.x.0（tag 触发其二进制 Release）→ 父仓库指针跟随
 ```
 
 ## 安装即已发布版本
