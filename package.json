@@ -5,7 +5,7 @@
   "description": "和 AI 对话的同时，看着导图实时生长 —— 基于 Codely 的会话导图扩展：每轮结束自动解析方案 / 最终选择 / 任务 / 决策 / 文件变更，AfterAgent Hook 触发不阻塞对话，解析复用 Codely 同链路、渲染存储全程本地，支持导出 PNG / Markdown",
   "scripts": {
     "test": "node scripts/run-tests.js",
-    "check": "node --check chatgraphic/hook.js && node --check chatgraphic/parser.js && node --check chatgraphic/serve.js && node --check chatgraphic/install.js && node --check chatgraphic/codex-hook.js && node --check chatgraphic/install-codex.js",
+    "check": "node --check chatgraphic/hook.js && node --check chatgraphic/parser.js && node --check chatgraphic/serve.js && node --check chatgraphic/install.js && node --check chatgraphic/codex-hook.js && node --check chatgraphic/install-codex.js && node --check chatgraphic/claude-hook.js && node --check chatgraphic/install-claude.js",
     "check-version": "node scripts/check-version.js"
   },
   "engines": {
