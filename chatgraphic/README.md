@@ -121,7 +121,7 @@ node chatgraphic/claude-hook.js ~/.claude/projects/<项目slug>/<会话id>.jsonl
 | `chatgraphic/install-codex.js` | Codex notify 注册/移除（写入 `~/.codex/config.toml`，顶层键插到首个表头前、幂等、他人占用不覆盖） |
 | `chatgraphic/claude-hook.js` | Claude Code Stop Hook 触发器：stdin JSON（transcript_path + session_id）→ 同款秒退/去重/取代旧解析/派发 |
 | `chatgraphic/install-claude.js` | Claude Stop Hook 注册/移除（写入 `~/.claude/settings.json`，数组并存追加、幂等、他人条目保留） |
-| `chatgraphic/viewer.html` | 只读导图：分层布局、生长动画、节点回链原文、拖拽缩放、导出 PNG/Markdown |
+| `chatgraphic/viewer.html` | 只读导图：分层布局、生长动画、节点回链原文、拖拽缩放、导出 PNG/Markdown；`?embed=1` 内嵌模式（侧栏抽屉化，供 TerminalServer 等宿主窄面板嵌入，独立使用不受影响） |
 | `chatgraphic/test/` | 58 个离线测试用例（`npm test`，node --test；不调用 codely/codex/claude） |
 | `chatgraphic/work/` | 运行时产物：`sessions/<会话id>/`（graph.json / transcript.json / status.json …）、`current.json`（最新会话指针）、`hook.log`（全链路日志） |
 
