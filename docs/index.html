@@ -217,34 +217,35 @@
     display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;
     color:var(--faint);font-size:12.5px;
   }
-  /* ===== Demo grow animation：产品形态演示图从左到右循环生长（14s 一轮） ===== */
+  /* ===== Demo grow animation：产品形态演示图循环生长（14s 一轮）
+     从左到右逐个长出（子元素按 --d 延迟入场）→ 停驻展示 → cg-all 父组
+     在 12~12.9s 整体一起淡出 → 全暗至 14s → 重新从左到右生长 ===== */
+  .mockup-card svg .cg-all{animation:cgAll 14s infinite both}
   .mockup-card svg .cg-n{transform-box:fill-box;transform-origin:50% 50%;animation:cgN 14s infinite both;animation-delay:calc(var(--d,0)*1s)}
   .mockup-card svg .cg-e path{stroke-dasharray:520;stroke-dashoffset:520;animation:cgE 14s infinite both;animation-delay:calc(var(--d,0)*1s)}
   .mockup-card svg .cg-le{animation:cgF 14s infinite both;animation-delay:calc(var(--d,0)*1s)}
+  @keyframes cgAll{
+    0%,86%{opacity:1}
+    92%,100%{opacity:0}
+  }
   @keyframes cgN{
     0%{opacity:0;transform:translateY(7px) scale(.94)}
     3%{opacity:1;transform:none}
-    86%{opacity:1;transform:none}
-    92%{opacity:0;transform:translateY(4px) scale(.97)}
-    100%{opacity:0;transform:translateY(7px) scale(.94)}
+    100%{opacity:1;transform:none}
   }
   @keyframes cgE{
     0%{stroke-dashoffset:520;opacity:0}
     2%{opacity:1}
     9%{stroke-dashoffset:0}
-    86%{stroke-dashoffset:0;opacity:1}
-    92%{stroke-dashoffset:520;opacity:0}
-    100%{stroke-dashoffset:520;opacity:0}
+    100%{stroke-dashoffset:0;opacity:1}
   }
   @keyframes cgF{
     0%{opacity:0}
     6%{opacity:1}
-    86%{opacity:1}
-    92%{opacity:0}
-    100%{opacity:0}
+    100%{opacity:1}
   }
   @media (prefers-reduced-motion:reduce){
-    .mockup-card svg .cg-n,.mockup-card svg .cg-e path,.mockup-card svg .cg-le{animation:none;opacity:1;transform:none;stroke-dashoffset:0}
+    .mockup-card svg .cg-all,.mockup-card svg .cg-n,.mockup-card svg .cg-e path,.mockup-card svg .cg-le{animation:none;opacity:1;transform:none;stroke-dashoffset:0}
   }
 </style>
 </head>
@@ -435,7 +436,7 @@
           <rect x="190" y="84" width="660" height="536" fill="url(#grid)"/>
           <text x="210" y="110" font-size="11" fill="#94A3B8">从第一句对话开始 · 导图随对话实时生长</text>
 
-          <!-- ===== conversation map : branches ===== -->
+          <g class="cg-all">
           <!-- ===== conversation map : branches（分阶段生长动画，--d 为出现时刻/秒） ===== -->
           <g class="cg-e" style="--d:.5" fill="none" stroke-linecap="round">
             <path d="M342 348 C372 330, 360 192, 380 174" stroke="#8B5CF6" stroke-width="4.5" opacity=".9"/>
@@ -514,6 +515,7 @@
           <circle cx="692" cy="247" r="6.5" fill="none" stroke="#60A5FA" stroke-width="1.6" stroke-dasharray="20 8" stroke-linecap="round" class="live-spin"/>
           <text x="706" y="251" font-size="10" font-weight="600" fill="#3B82F6">正在解析新回复…</text>
           <text x="830" y="251" text-anchor="end" font-size="8.5" font-weight="700" fill="#16A34A" class="live-pulse">● LIVE</text></g>
+          </g>
 
           <!-- 决策记录 -->
 <g class="cg-n" style="--d:1">          <rect x="380" y="284" width="96" height="32" rx="16" fill="#FFF7ED" stroke="#D97706" stroke-width="1.4"/>
@@ -948,10 +950,20 @@
 
 <footer>
   <div class="container">
-    <span>ChatGraphic · 产品描述 v0.3 · 内部资料，请勿外传</span>
+    <span>ChatGraphic · 产品描述 v0.3 · <a href="https://github.com/weiwei-gu/ChatGraphic" style="color:inherit;text-decoration:underline">github.com/weiwei-gu/ChatGraphic</a></span>
     <span>界面为设计示意稿（非真实截图）· 2026-09-15 · v0.3 实时优先</span>
   </div>
 </footer>
 
+<script>
+/* 每轮生长结束（全暗时刻）重置全部演示动画相位：子元素的入场延迟逐周期重新生效 */
+(function(){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var els = document.querySelectorAll('.mockup-card svg .cg-all, .mockup-card svg .cg-n, .mockup-card svg .cg-e path, .mockup-card svg .cg-le');
+  setInterval(function(){
+    els.forEach(function(el){ el.style.animation='none'; el.getBoundingClientRect(); el.style.animation=''; });
+  }, 14000);
+})();
+</script>
 </body>
 </html>
