@@ -3,15 +3,16 @@
 ## 本地开发
 
 ```bash
-npm test         # 22 个用例，全离线（Node 内置 node --test，零依赖；不调用 codely/LLM）
-npm run check    # hook / parser / serve / install 四个脚本语法检查
+npm test         # 58 个用例，全离线（Node 内置 node --test，零依赖；不调用 codely/codex/claude）
+npm run check    # hook / parser / serve / install / codex-hook / install-codex / claude-hook / install-claude 八个脚本语法检查
 ```
 
-测试覆盖：转录归一化（三种真实格式）、轮次构建与精简、归一化规则、JSON 提取、会话定位、数据目录规则、Hook 守卫/去重/取代旧解析（fake-parser 替身）、install 幂等与还原、serve 路由与端口避让。
+- 测试入口为 `scripts/run-tests.js`（显式列出 `*.test.js` 交给 `--test`）——不写 glob 是因为 Windows 的 cmd 不展开通配符、Node 20 的 `--test` 也无原生 glob，曾致 CI 的 windows·Node 20 格常红
+- 测试覆盖：转录归一化（Codely 三种格式 / Codex rollout / Claude 转录）、轮次构建与精简、归一化规则、JSON 提取、会话定位与引擎路由识别、数据目录规则、Hook 守卫/去重/取代旧解析（fake-parser 替身）、notify 与 Stop payload 解析、config.toml（TOML 顶层键插入）与 settings.json（hooks 数组并存）注册、install 幂等与还原、serve 路由与端口避让、手动模式端到端（stub parser）
 
 ## CI
 
-`.github/workflows/ci.yml`：push / PR 自动跑测试矩阵（ubuntu + macos × Node 20/24）。
+`.github/workflows/ci.yml`：push / PR 自动跑测试矩阵（ubuntu + macos + windows × Node 20/24）。
 
 ## 发布流程
 

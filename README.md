@@ -1,8 +1,8 @@
 # ChatGraphic
 
-> 和 AI 对话的同时，看着导图实时生长 —— 基于 Codely 的会话导图
+> 和 AI 对话的同时，看着导图实时生长 —— 支持 Codely / Codex CLI / Claude Code 三端的会话导图
 
-ChatGraphic 是 [Codely](https://codely-docs.tuanjie.cn)（AI 编程 CLI）的配套可视化工具：**对话进行中**即实时解析——方案、最终选择、任务、决策、文件变更自动长成一张导图，聊完即得图。讨论不迷路，成果可沉淀。
+ChatGraphic 是 AI 编程 CLI 的配套可视化工具（当前接入 [Codely](https://codely-docs.tuanjie.cn)、Codex CLI、Claude Code）：**对话进行中**即实时解析——方案、最终选择、任务、决策、文件变更自动长成一张导图，聊完即得图。讨论不迷路，成果可沉淀。三端各自 Hook 触发、各走各的模型链路解析，数据统一本地存储、同一个 viewer 混排查看。
 
 - 在线产品页：<https://weiwei-gu.github.io/ChatGraphic/>（产品描述 v0.3 静态发布）
 - 快速开始：
@@ -13,6 +13,15 @@ node .codely-cli/extensions/chatgraphic/chatgraphic/install.js     # 注册 Hook
 ```
 
 `--scope workspace` 把扩展装入**本项目的** `.codely-cli/extensions/`（从最新 Release 拉取）；不加则装入用户目录 `~/.codely-cli/extensions/`（全局共享一份）。查看导图：`node .codely-cli/extensions/chatgraphic/chatgraphic/serve.js`。
+
+**Codex CLI / Claude Code 用户**（克隆仓库后）：
+
+```bash
+node chatgraphic/install-codex.js    # Codex：写入 ~/.codex/config.toml 的 notify
+node chatgraphic/install-claude.js   # Claude Code：写入 ~/.claude/settings.json 的 hooks.Stop
+```
+
+三端接入与卸载细节见 **[docs/guide.md](docs/guide.md)**。
 
 安装与使用细节（信任机制、数据目录、成本控制）见 **[docs/guide.md](docs/guide.md)**。
 

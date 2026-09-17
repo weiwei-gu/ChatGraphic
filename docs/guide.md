@@ -1,6 +1,6 @@
 # 安装与使用指南
 
-前置：本机已安装并登录 `codely` CLI（解析通过 `codely -p` 复用同一模型链路）。
+前置：已安装并登录你想可视化的 CLI——**Codely** / **Codex CLI** / **Claude Code** 任一或全部。三端各自 Hook 触发、各走各自的模型链路解析（Codely → `codely -p`、Codex → `codex exec`、Claude → `claude -p`），互不依赖；导图数据统一存于 `~/.chatgraphic/`（`CHATGRAPHIC_HOME` 可覆盖），同一个 viewer 混排展示三端会话。
 
 ## 方式一：Codely 扩展安装（推荐）
 
@@ -39,9 +39,39 @@ node chatgraphic/serve.js       # 启动导图视图（自动打开 http://local
 
 > 历史说明：仓库曾内置项目级 Hook（`.codely-cli/settings.json`），现已统一为 `install.js` 的用户级注册，避免与扩展方式双重触发；克隆用户与扩展用户走同一注册机制。
 
+## Codex CLI 接入（实验）
+
+Codex 在每轮结束（`agent-turn-complete`）时经 `notify` 机制触发外部程序：
+
+```bash
+# 注册（幂等写入 ~/.codex/config.toml 的 notify 键；--uninstall 移除 / --status 查看）
+node chatgraphic/install-codex.js
+
+# 之后正常使用 Codex —— 每轮结束自动解析出图；历史会话手动补跑：
+node chatgraphic/codex-hook.js ~/.codex/sessions/<年/月/日>/rollout-*-<thread-id>.jsonl
+```
+
+- **零 codely 依赖**：Codex 会话的解析走 `codex exec`（你 `~/.codex/config.toml` 配置的模型/认证）
+- `notify` 已被其他程序占用时不覆盖（告警提示手动处理）；数据目录与一键关闭同 Codely
+
+## Claude Code 接入（实验）
+
+Claude Code 在每轮响应结束（Stop 事件）时以 JSON 经 stdin 调用 Hook 命令：
+
+```bash
+# 注册（幂等写入 ~/.claude/settings.json 的 hooks.Stop；--uninstall 移除 / --status 查看）
+node chatgraphic/install-claude.js
+
+# 之后正常使用 Claude Code —— 每轮结束自动解析出图；历史会话手动补跑：
+node chatgraphic/claude-hook.js ~/.claude/projects/<项目slug>/<会话id>.jsonl
+```
+
+- **零 codely 依赖**：Claude 会话的解析走 `claude -p`（你 `~/.claude/settings.json` 配置的模型/认证）
+- hooks 为数组结构，与他人既有 Stop Hook **并存追加**互不影响；`SubagentStop` 等其他事件一律忽略
+
 ## 日常使用
 
-- **看图**：`serve.js` 启动后浏览器自动打开；左栏「会话」面板可切换/固定任意会话，画布拖拽缩放，节点点击回链对话原文
-- **复盘**：`node chatgraphic/parser.js --transcript <会话JSON路径>` 手动补跑历史会话；加 `--full` 强制全量重解析（默认自动增量）
-- **成本控制**：`chatgraphic/config.json` 可换解析模型（默认 `codely-flash`）、`"enabled": false` 一键关闭、`"parseMode": "full|incremental|auto"` 控制解析模式
+- **看图**：`serve.js` 启动后浏览器自动打开；左栏「会话」面板可切换/固定任意会话（Codely / Codex / Claude 三端混排），画布拖拽缩放，节点点击回链对话原文
+- **复盘**：`node chatgraphic/parser.js --transcript <转录路径>` 手动补跑历史会话——三种转录自动识别（Codely auto-save / Codex rollout / Claude 转录），或直接用对应 `codex-hook.js` / `claude-hook.js` 传文件路径；加 `--full` 强制全量重解析（默认自动增量）
+- **成本控制**：`chatgraphic/config.json` 可换 Codely 引擎解析模型（默认 `codely-flash`）、`"enabled": false` 一键关闭**全部三端**、`"parseMode": "full|incremental|auto"` 控制解析模式；Codex / Claude 引擎分别用各自 CLI 配置的模型（`config.json` 的 `model` 不参与）；超长会话解析慢时可调大 `parseTimeoutMs`（默认 240 秒/次，失败自动重试一次）
 - **排障**：见 [chatgraphic/README.md](../chatgraphic/README.md) 的「成本与控制 / 故障排查」章节（`work/hook.log` 全链路日志）
