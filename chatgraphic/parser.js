@@ -5,7 +5,7 @@
  * 由 hook.js 异步派发，也可手动补跑：
  *   node parser.js --transcript <路径> [--session <会话id>] [--full]
  * 每个会话独立目录 work/sessions/<sessionId>/，多窗口并行互不干扰；
- * 解析完成更新 work/current.json 指针（viewer 默认跟随最新会话）。
+ * 解析开始即切换 work/current.json 指针（viewer 从「解析中」状态起就开始跟随本会话；完成时更新时间戳）。
  * 增量解析（v0.2.0，对齐 v0.3 Phase 2「滚动窗口 + 图状态摘要」）：
  *   同会话第二次起，输入 = 图状态摘要 + 新增轮次（不再重发全量转录，成本近似常数）；
  *   首次 / 转录被压缩 / 增量失败 / 疑似丢节点 → 自动回退全量；--full 可强制全量。
@@ -640,6 +640,8 @@ async function main() {
   fs.writeFileSync(path.join(sd, 'parse.pid'), String(process.pid));
   log('parser: [' + sessionId + '] 开始解析 ' + transcriptPath);
   setStatus(sd, { state: 'running', startedAt: new Date().toISOString(), transcript: transcriptPath, sessionId });
+  /* 解析开始即切换 viewer 跟随指针：新会话解析期间徽章即显示「解析中」（完成时下方再更新时间戳） */
+  atomicWrite(path.join(WORK, 'current.json'), JSON.stringify({ sessionId, updatedAt: new Date().toISOString() }, null, 1));
 
   try {
     const history = loadTranscriptFromRaw(raw);
