@@ -16,7 +16,7 @@ hook.js / codex-hook.js / claude-hook.js   ← 秒退不阻塞对话；sha1 去�
 chatgraphic/parser.js          ← 转录归一化（三端格式容错）→ 精简 → 引擎路由同链路解析：
                                  Codely → codely -p ／ Codex → codex exec ／ Claude → claude -p（各走各的模型/认证）
    ▼
-graph.json（扩展安装态 → ~/.chatgraphic/；克隆 → 本目录 work/）  ← 分型 + 三问准入 + 置信分级 → 版本递增（每会话独立目录）
+graph.json（用户级扩展 → ~/.chatgraphic/；项目级扩展 → <项目>/.chatgraphic/；克隆 → 本目录 work/）  ← 分型 + 三问准入 + 置信分级 → 版本递增（每会话独立目录）
    │  serve.js（本地只读服务，2s 轮询）
    ▼
 浏览器 viewer                  ← 导图实时生长 / 三端会话混排切换 / 节点回链对话原文 / 导出 PNG、Markdown

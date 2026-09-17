@@ -21,11 +21,15 @@ const { spawn } = require('child_process');
 
 const DIR = __dirname;
 
-/* 数据目录：与 hook.js 同规则（CHATGRAPHIC_HOME > 扩展安装态 ~/.chatgraphic > 本地 work/） */
+/* 数据目录：与 hook.js 同规则（CHATGRAPHIC_HOME > 扩展态：用户级 ~/.chatgraphic、workspace 级 <项目>/.chatgraphic > 本地 work/） */
 function resolveWork(dir) {
   if (process.env.CHATGRAPHIC_HOME) return path.join(process.env.CHATGRAPHIC_HOME, 'work');
-  if (path.resolve(dir).includes(path.sep + '.codely-cli' + path.sep + 'extensions' + path.sep)) {
-    return path.join(os.homedir(), '.chatgraphic');
+  const parts = path.resolve(dir).split(path.sep);
+  const i = parts.lastIndexOf('.codely-cli');
+  if (i > 0 && parts[i + 1] === 'extensions') {
+    const projectDir = parts.slice(0, i).join(path.sep);
+    if (projectDir === os.homedir()) return path.join(os.homedir(), '.chatgraphic');
+    return path.join(projectDir, '.chatgraphic');
   }
   return path.join(dir, 'work');
 }
