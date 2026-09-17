@@ -103,6 +103,12 @@
 
   /* ===== Why ===== */
   .why-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:22px}
+  .moments-lead{margin-top:46px;font-size:15.5px;font-weight:800;color:var(--ink)}
+  .moments{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:16px}
+  .card .m-before{margin-top:10px;font-size:13px;color:var(--muted)}
+  .card .m-before .no{color:#DC2626;font-weight:700}
+  .card .m-after{margin-top:12px;font-size:13px;color:var(--ink-2);background:var(--blue-tint);border:1px solid #D6E4FC;border-radius:10px;padding:10px 14px}
+  .card .m-after .yes{color:var(--blue-dark);font-weight:700}
   .pain-list{list-style:none;display:flex;flex-direction:column;gap:14px}
   .pain-list li{
     display:flex;gap:12px;font-size:14.5px;color:var(--ink-2);
@@ -126,7 +132,7 @@
     background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);
     padding:5px 13px;border-radius:99px;font-size:12.5px;font-weight:500;
   }
-  @media (max-width:820px){.why-grid{grid-template-columns:1fr}.grid3{grid-template-columns:1fr}}
+  @media (max-width:820px){.why-grid{grid-template-columns:1fr}.moments{grid-template-columns:1fr}.grid3{grid-template-columns:1fr}}
 
   /* ===== Features ===== */
   .grid2x3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
@@ -670,6 +676,22 @@
         <div class="chips">
           <span>自动解析</span><span>实时生长</span><span>一图沉淀</span>
         </div>
+      </div>
+    </div>
+
+    <p class="moments-lead">它解决的，是两个最熟悉的瞬间：</p>
+    <div class="moments">
+      <div class="card">
+        <div class="tagline">瞬间一 · 方案收敛之后</div>
+        <h3>「我们聊到哪儿了？」</h3>
+        <p class="m-before"><span class="no">✕ 没有图：</span>和 AI 讨论一个大的方案，几十轮后终于聚焦到一个点；转头开始做其他模块，再回来时——聊过什么、定了什么、<b>哪些还没讨论</b>，只能靠翻记录、靠脑子重建上下文。</p>
+        <p class="m-after"><span class="yes">✓ 有图：</span>图是讨论的进度快照——拍板的方案高亮在图上、任务挂着状态、没长出来的分支就是「还没聊的」。切走再回来，一眼接上。</p>
+      </div>
+      <div class="card">
+        <div class="tagline">瞬间二 · 提纲逐项探索</div>
+        <h3>「其余几项去哪了？」</h3>
+        <p class="m-before"><span class="no">✕ 没有图：</span>让 AI 给一份提纲，挑其中一项深入探索；等想回头看其他几项时，它们早已<b>淹没在上百轮聊天的洪流里</b>。</p>
+        <p class="m-after"><span class="yes">✓ 有图：</span>提纲的每一项都自动成为图上节点——探索了哪项、各自进行到什么程度，全图始终在场，随时跳回任意一项继续。</p>
       </div>
     </div>
 
