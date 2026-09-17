@@ -1,0 +1,3 @@
+[submodule "TerminalServer"]
+	path = TerminalServer
+	url = git@github.com:weiwei-gu/TerminalServer.git
