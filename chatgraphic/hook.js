@@ -16,11 +16,17 @@ const { spawn } = require('child_process');
 
 const DIR = __dirname;
 
-/* 数据目录：CHATGRAPHIC_HOME 可覆盖；扩展安装态（user/workspace 作用域均含 .codely-cli/extensions/ 路径段）放 ~/.chatgraphic/ 防 update 清空；仓库/开发态用本地 work/ */
+/* 数据目录：CHATGRAPHIC_HOME 可覆盖；扩展安装态数据不入扩展目录（防 update 清空）——
+   用户级（~/.codely-cli/extensions/…）放 ~/.chatgraphic/，workspace 级（<项目>/.codely-cli/extensions/…）随项目放 <项目>/.chatgraphic/；
+   仓库/开发态用本地 work/ */
 function resolveWork(dir) {
   if (process.env.CHATGRAPHIC_HOME) return path.join(process.env.CHATGRAPHIC_HOME, 'work');
-  if (path.resolve(dir).includes(path.sep + '.codely-cli' + path.sep + 'extensions' + path.sep)) {
-    return path.join(os.homedir(), '.chatgraphic');
+  const parts = path.resolve(dir).split(path.sep);
+  const i = parts.lastIndexOf('.codely-cli');
+  if (i > 0 && parts[i + 1] === 'extensions') {
+    const projectDir = parts.slice(0, i).join(path.sep);
+    if (projectDir === os.homedir()) return path.join(os.homedir(), '.chatgraphic'); /* 用户级扩展：机器共享 */
+    return path.join(projectDir, '.chatgraphic'); /* workspace 级扩展：随项目 */
   }
   return path.join(dir, 'work');
 }

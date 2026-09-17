@@ -4,9 +4,11 @@
 
 **数据目录规则**（三端一致，按注册的脚本所在位置判定）：
 
-- 脚本位于**扩展安装目录**（`<项目>/.codely-cli/extensions/…` 或 `~/.codely-cli/extensions/…`）→ `~/.chatgraphic/`（不受扩展升级影响）
+- 脚本位于**项目级扩展目录**（`<项目>/.codely-cli/extensions/…`）→ `<项目>/.chatgraphic/`（随项目走，不入扩展目录，不受扩展升级影响；建议把 `.chatgraphic/` 加入项目 `.gitignore`）
+- 脚本位于**用户级扩展目录**（`~/.codely-cli/extensions/…`）→ `~/.chatgraphic/`（机器级共享，不受扩展升级影响）
 - 脚本位于**克隆仓库**的 `chatgraphic/` → `<克隆>/chatgraphic/work/`（随仓库走，serve 需从同一克隆启动）
-- 均可用 `CHATGRAPHIC_HOME` 覆盖。**三端统一部署推荐**：先装 Codely 扩展，再从扩展目录注册三端 Hook（见下文）——数据全部进 `~/.chatgraphic/`，同一个 viewer 混排展示三端会话。
+- 均可用 `CHATGRAPHIC_HOME` 覆盖。**三端统一部署推荐**：先装 Codely 扩展（用户级），再从扩展目录注册三端 Hook（见下文）——数据全部进 `~/.chatgraphic/`，同一个 viewer 混排展示三端会话
+- 升级不迁移历史数据：旧版项目级扩展会话仍留在 `~/.chatgraphic/`，需要时可手动 `mv` 到 `<项目>/.chatgraphic/`
 
 ## 注册作用域对比（含「有没有 `--scope workspace`」）
 
@@ -33,7 +35,7 @@ node .codely-cli/extensions/chatgraphic/chatgraphic/serve.js
 
 说明：
 
-- **作用域**：`--scope workspace` 装入本项目（项目级依赖，随项目走）；不加则默认装入 `~/.codely-cli/extensions/`（用户级，全局共享一份）。两种作用域下导图数据都存于 `~/.chatgraphic/`（`CHATGRAPHIC_HOME` 可覆盖），不受扩展升级影响。
+- **作用域**：`--scope workspace` 装入本项目（项目级依赖，随项目走）；不加则默认装入 `~/.codely-cli/extensions/`（用户级，全局共享一份）。两种作用域数据都不入扩展目录、不受升级影响（`CHATGRAPHIC_HOME` 可覆盖）：用户级存 `~/.chatgraphic/`（机器共享），项目级随项目存 `<项目>/.chatgraphic/`。
 - **命令写法**：项目级注册写入 `$CODELY_PROJECT_DIR` 锚定的可移植命令（Codely 在 hook 执行时展开，跨机器/跨克隆位置通用）；用户级注册为本机绝对路径；旧版绝对路径写法仍被识别与兼容
 - **关于安装目录里的 `.git`**：codely 的扩展安装基于 git clone（按 Release tag 检出），`.git` 是 `codely extensions update` 进行升级的机制基础，属安装器正常行为。workspace 作用域下它位于 `<项目>/.codely-cli/extensions/chatgraphic/.git`——请确保项目 `.gitignore` 包含 `.codely-cli/extensions/`（本仓库已内置），避免嵌套仓库进版本库。
 - 每个项目**首次使用**时，在该项目的 Codely 会话里执行一次 `/hooks trust-project`（CLI 安全机制：Hook 信任指纹按项目记录于 `~/.codely-cli/trusted_hooks.json`）。
@@ -87,7 +89,7 @@ node chatgraphic/claude-hook.js ~/.claude/projects/<项目slug>/<会话id>.jsonl
 
 ## 三端统一部署（推荐）
 
-想让 Codely / Codex / Claude 三端会话进**同一个 viewer**：先以 Codely 扩展方式安装（任意作用域），再从**扩展目录**注册三端——三端脚本都位于 `.codely-cli/extensions/` 路径下，数据全部写入 `~/.chatgraphic/`：
+想让 Codely / Codex / Claude 三端会话进**同一个 viewer**：先以 Codely 扩展方式安装，再从**扩展目录**注册三端——三端脚本同源即同数据目录：用户级扩展 → 全部写入 `~/.chatgraphic/`；项目级扩展 → 全部写入 `<项目>/.chatgraphic/`：
 
 ```bash
 # 以 workspace 作用域为例（用户级安装把路径换成 ~/.codely-cli/extensions/… 即可）

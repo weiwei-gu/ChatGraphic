@@ -155,6 +155,21 @@
   @keyframes grow{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
   ::-webkit-scrollbar{width:8px;height:8px}
   ::-webkit-scrollbar-thumb{background:#D7E0EC;border-radius:4px}
+  /* ===== embed 模式（?embed=1，终端内嵌）：侧栏抽屉化，画布全宽；独立使用不受影响 ===== */
+  .embed-only{display:none}
+  body.embed .embed-only{display:inline-block}
+  body.embed .app{grid-template-columns:1fr}
+  body.embed .side-left,body.embed .side-right{
+    display:flex; /* 覆盖媒体查询的 display:none（≤1100px 隐藏详情、≤760px 隐藏会话），抽屉在任何面板宽度都渲染 */
+    position:fixed;top:52px;bottom:0;width:280px;max-width:85vw;margin:0;z-index:30;
+    box-shadow:0 8px 28px rgba(15,23,42,.14);transition:transform .25s ease;
+  }
+  body.embed .side-left{left:0;transform:translateX(-100%);border-right:1px solid var(--line)}
+  body.embed .side-right{right:0;transform:translateX(100%);border-left:1px solid var(--line)}
+  body.embed .side-left.open,body.embed .side-right.open{transform:translateX(0)}
+  .drawer-x{position:absolute;top:9px;right:10px;background:none;border:none;font-size:17px;line-height:1;color:var(--faint);cursor:pointer;font-family:inherit;padding:2px}
+  .drawer-x:hover{color:var(--ink)}
+  .btn.on{background:var(--blue-tint);border-color:var(--blue);color:var(--blue-dark)}
 </style>
 </head>
 <body>
@@ -168,10 +183,13 @@
   <span class="live wait" id="liveBadge"><i></i><span id="liveText">等待解析</span></span>
   <button class="btn" id="btnMD">导出 Markdown</button>
   <button class="btn primary" id="btnPNG">导出 PNG</button>
+  <button class="btn embed-only" id="embedSessBtn">会话</button>
+  <button class="btn embed-only" id="embedInspBtn">节点详情</button>
 </div>
 
 <div class="app">
   <aside class="side-left">
+    <button class="drawer-x embed-only" data-drawer=".side-left" aria-label="关闭">×</button>
     <div class="blk">
       <h3>会话</h3>
       <div id="sessList"><span class="tl-empty">暂无会话</span></div>
@@ -241,6 +259,7 @@
   </section>
 
   <aside class="side-right">
+    <button class="drawer-x embed-only" data-drawer=".side-right" aria-label="关闭">×</button>
     <div class="blk">
       <h3>节点详情</h3>
       <div id="inspector"><p class="insp-empty">点击导图中的任意节点，查看它的类型、置信度、推断依据，以及产生它的对话原文（节点回链）。</p></div>
@@ -261,6 +280,9 @@ const NS='http://www.w3.org/2000/svg';
 const FONT="-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Segoe UI',sans-serif";
 const MONO="ui-monospace,Menlo,monospace";
 const $=s=>document.querySelector(s);
+/* embed 模式（?embed=1）：终端内嵌时侧栏抽屉化，独立打开 viewer 不带参数则行为不变 */
+const EMBED=new URLSearchParams(location.search).has('embed');
+if(EMBED)document.body.classList.add('embed');
 function svgEl(tag,attrs,parent){const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n}
 function txt(parent,attrs,s){const t=svgEl('text',attrs,parent);t.textContent=s;return t}
 const mcv=document.createElement('canvas').getContext('2d');
@@ -550,6 +572,9 @@ stage.addEventListener('pointerup',e=>{
   if(!drag)return;
   if(!drag.moved&&drag.node){const id=[...nodes.entries()].find(([,n])=>n.el===drag.node);if(id)inspect(nodes.get(id[0]))}
   else if(drag.moved){userMoved=true}
+  else if(EMBED){ /* 内嵌模式：点画布空白处只收起详情抽屉，会话抽屉保持当前状态 */
+    $('.side-right').classList.remove('open');$('#embedInspBtn').classList.remove('on');
+  }
   drag=null;
 });
 stage.addEventListener('wheel',e=>{
@@ -655,6 +680,7 @@ function inspect(id){
     +'<div class="insp-title">'+esc(d.title)+'</div>'
     +(kvs?'<div class="kv">'+kvs+'</div>':'')
     +src;
+  if(EMBED){$('.side-right').classList.add('open');$('#embedInspBtn').classList.add('on')} /* 内嵌模式：点节点自动弹出详情抽屉 */
 }
 
 /* ================= 轮询与多会话 ================= */
@@ -781,6 +807,20 @@ $('#btnPNG').addEventListener('click',()=>{
   img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 });
 window.addEventListener('resize',()=>{if($('#followChk').checked&&!userMoved)fitView(false)});
+
+/* ================= embed 模式交互（终端内嵌时侧栏抽屉化） ================= */
+if(EMBED){
+  const syncBtns=()=>{
+    $('#embedSessBtn').classList.toggle('on',$('.side-left').classList.contains('open'));
+    $('#embedInspBtn').classList.toggle('on',$('.side-right').classList.contains('open'));
+  };
+  $('#embedSessBtn').addEventListener('click',()=>{$('.side-left').classList.toggle('open');syncBtns()});
+  $('#embedInspBtn').addEventListener('click',()=>{$('.side-right').classList.toggle('open');syncBtns()});
+  document.querySelectorAll('.drawer-x').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelector(b.dataset.drawer).classList.remove('open');syncBtns();
+  }));
+  $('.side-left').classList.add('open');syncBtns(); /* 内嵌模式：会话抽屉默认展开 */
+}
 </script>
 </body>
 </html>
