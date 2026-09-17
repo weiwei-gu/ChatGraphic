@@ -4,7 +4,7 @@
 
 ChatGraphic 是 AI 编程 CLI 的配套可视化工具（当前接入 [Codely](https://codely-docs.tuanjie.cn)、Codex CLI、Claude Code）：**对话进行中**即实时解析——方案、最终选择、任务、决策、文件变更自动长成一张导图，聊完即得图。讨论不迷路，成果可沉淀。三端各自 Hook 触发、各走各的模型链路解析，数据统一本地存储、同一个 viewer 混排查看。
 
-- 在线产品页：<https://weiwei-gu.github.io/ChatGraphic/>（产品描述 v0.3 静态发布）
+- 在线产品页：<https://weiwei-gu.github.io/ChatGraphic/>（产品介绍页）
 - 快速开始：
 
 ```bash
