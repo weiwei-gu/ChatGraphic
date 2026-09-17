@@ -21,7 +21,7 @@ node chatgraphic/install-codex.js    # Codex：写入 ~/.codex/config.toml 的 n
 node chatgraphic/install-claude.js   # Claude Code：写入 ~/.claude/settings.json 的 hooks.Stop
 ```
 
-三端接入与卸载细节见 **[docs/guide.md](docs/guide.md)**。
+三端接入与卸载细节见 **[docs/guide.md](docs/guide.md)**。注册作用域：Codely 跟随扩展安装位置（`--scope workspace` 即项目级）；Codex / Claude 当前为用户级全局注册（Codex 实测项目级 notify 不生效；Claude 原生支持项目级 hooks，安装器暂未提供）——对比表见 guide。
 
 安装与使用细节（信任机制、数据目录、成本控制）见 **[docs/guide.md](docs/guide.md)**。
 

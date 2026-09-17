@@ -1,24 +1,25 @@
-# ChatGraphic POC — 基于 Codely 的会话导图
+# ChatGraphic POC — 三端（Codely / Codex CLI / Claude Code）会话导图
 
-> 把「与 Codely 的对话」实时解析成一张会话导图：**方案 → 最终选择 → 任务 → 决策 → 文件变更**，边聊边长，聊完即得图。
+> 把「与 AI 编程 CLI 的对话」实时解析成一张会话导图：**方案 → 最终选择 → 任务 → 决策 → 文件变更**，边聊边长，聊完即得图。
 > 本目录是产品描述 v0.3 的可运行 POC：**真实 Hook 触发、真实同链路解析、本地渲染**，非脚本演示。
 
 ## 架构（对齐 v0.3「Hook 驱动、同链路同边界」）
 
 ```
-你在本项目里与 Codely 对话
-   │  每轮结束（AfterAgent Hook，由 install.js 注册于 ~/.codely-cli/settings.json）
+Codely 对话 ── 每轮结束 AfterAgent Hook（install.js，作用域跟随安装位置）
+Codex 对话 ── 每轮结束 notify agent-turn-complete（install-codex.js → ~/.codex/config.toml）
+Claude 对话 ─ 每轮响应结束 Stop 事件（install-claude.js → ~/.claude/settings.json）
    ▼
-chatgraphic/hook.js            ← 秒退不阻塞对话；sha1 去重；杀掉未完成的旧解析（最新胜出）
+hook.js / codex-hook.js / claude-hook.js   ← 秒退不阻塞对话；sha1 去重；杀掉未完成的旧解析（最新胜出，会话级隔离）
    │  异步派发（detached）
    ▼
-chatgraphic/parser.js          ← 转录精简（剥离上下文噪音/工具结果截断）
-   │  spawn: codely -p（同一模型链路/认证，跑在 tmpdir，不加载项目配置）
+chatgraphic/parser.js          ← 转录归一化（三端格式容错）→ 精简 → 引擎路由同链路解析：
+                                 Codely → codely -p ／ Codex → codex exec ／ Claude → claude -p（各走各的模型/认证）
    ▼
-chatgraphic/work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 → 版本递增（每会话独立目录）
+graph.json（扩展安装态 → ~/.chatgraphic/；克隆 → 本目录 work/）  ← 分型 + 三问准入 + 置信分级 → 版本递增（每会话独立目录）
    │  serve.js（本地只读服务，2s 轮询）
    ▼
-浏览器 viewer                  ← 导图实时生长 / 会话列表切换 / 节点回链原文 / 导出 PNG、Markdown
+浏览器 viewer                  ← 导图实时生长 / 三端会话混排切换 / 节点回链对话原文 / 导出 PNG、Markdown
 ```
 
 ## 多窗口 / 多项目同机共存
@@ -31,7 +32,7 @@ chatgraphic/work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + �
 
 ## 快速开始
 
-前置：已通过 `node chatgraphic/install.js` 注册用户级 Hook（未注册先执行，详见根 README）。直接两步：
+前置：已通过 `node chatgraphic/install.js` 注册 Hook（作用域跟随安装/克隆位置，未注册先执行，详见根 README）；Codex / Claude Code 接入见下文两节。直接两步：
 
 ```bash
 # 1. 启动导图视图（会自动打开浏览器；或手动访问 http://localhost:4830）
@@ -56,7 +57,7 @@ node chatgraphic/codex-hook.js ~/.codex/sessions/2026/09/06/rollout-xxxx-<thread
 
 - **链路**：notify → `codex-hook.js`（按 `thread-id` 定位 `sessions/<年/月/日>/rollout-*-<thread-id>.jsonl` 全量转录）→ 同一套 `parser.js` → **引擎路由（同链路）**：Codex 会话用 `codex exec` 解析（你 Codex 配置的模型/认证，`config.json` 的 `model` 不参与）；Codely 会话仍走 `codely -p` → 同一个 viewer
 - **转录适配**：parser 自动识别 Codex rollout 格式（跳过 developer/环境注入与 event_msg 回显；工具名经 call_id 映射）；会话 id = thread-id
-- **注意**：`config.toml` 的 `notify` 已被其他程序占用时不覆盖（告警提示手动处理）；数据目录规则与 Codely 相同；`config.json` 的 `"enabled": false` 同样一键关闭两端；Codex 新版 hooks 系统（0.145+）只拦截工具调用、无轮次结束事件，故选 notify 通道
+- **注意**：`config.toml` 的 `notify` 已被其他程序占用时不覆盖（告警提示手动处理）；注册作用域仅用户级（Codex 项目级 config 中 notify 实测不触发，见 docs/guide.md 对比表）；数据目录按注册脚本位置判定（见下文架构图注）；`config.json` 的 `"enabled": false` 同样一键关闭**全部三端**；Codex 新版 hooks 系统（0.145+）只拦截工具调用、无轮次结束事件，故选 notify 通道
 
 ## Claude Code 支持（实验）
 
@@ -76,13 +77,15 @@ node chatgraphic/claude-hook.js ~/.claude/projects/<项目slug>/<会话id>.jsonl
 
 ## 手动补跑历史会话（复盘场景）
 
-对任意 auto-save 转录或实时转录 JSONL 生成导图：
+三种转录格式自动识别，任选一种入口：
 
 ```bash
-node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xxxx.json
+node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xxxx.json   # Codely auto-save
+node chatgraphic/codex-hook.js ~/.codex/sessions/<年/月/日>/rollout-xxxx-<thread-id>.jsonl # Codex rollout
+node chatgraphic/claude-hook.js ~/.claude/projects/<项目slug>/<会话id>.jsonl               # Claude 转录
 ```
 
-补跑结果会覆盖当前导图（全量重解析语义），版本号递增。
+补跑结果会覆盖当前导图（全量重解析语义），版本号递增；加 `--full` 可强制全量（parser.js 入口）。
 
 ## 成本与控制
 
@@ -90,7 +93,7 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 |---|---|
 | 解析成本 | **自动增量（v0.2.0）**：同会话第二次起仅发送「图状态摘要 + 新增轮次」，实测输入从 38K 降到 0.4K 字符、耗时约 1/4，成本近似常数不再随会话线性涨；首次 / 转录被压缩 / 增量失败或疑似丢节点 → 自动回退全量；模型默认 `codely-flash` |
 | 转录上限 | 单轮文本截断 `maxTurnChars`；总载荷上限 `maxTotalLeanChars`，超限保头保尾略去中段（解析器会在「待确认」里如实标注） |
-| 一键关闭 | `chatgraphic/config.json` 里 `"enabled": false`（Hook 立即静默跳过）；彻底移除 Hook 则执行 `node chatgraphic/install.js --uninstall` |
+| 一键关闭 | `chatgraphic/config.json` 里 `"enabled": false`（三端 Hook 立即静默跳过）；彻底移除则按端执行 `node chatgraphic/install.js --uninstall` / `install-codex.js --uninstall` / `install-claude.js --uninstall` |
 | 换模型 | Codely 引擎：`config.json` 的 `"model"` 改为任意已配置模型 id（如 `codely-core` 更强但更慢更贵）；Codex 引擎：用你 `~/.codex/config.toml` 配置的模型；Claude 引擎：用你 `~/.claude/settings.json` 配置的模型（后两者的 `config.json` 的 `model` 均不参与） |
 | 解析超时 | `parseTimeoutMs` 默认 240 秒/次（失败自动重试一次）。Claude/Codex 引擎走各自代理时大载荷可能偏慢：超长会话（转录 >1MB）可在 `config.json` 调大该值（如 600000） |
 | 观测 | `chatgraphic/work/hook.log`（全链路日志）、`status.json`（当前解析状态）、`version.txt`（导图版本） |
@@ -108,25 +111,25 @@ node chatgraphic/parser.js --transcript .codely-cli/auto-saves/chat-auto-save-xx
 
 | 文件 | 职责 |
 |---|---|
-| `~/.codely-cli/settings.json`（用户级） | 由 `chatgraphic/install.js` 注册的 AfterAgent Hook（对所有项目生效，按项目信任） |
+| `~/.codely-cli/settings.json` 或 `<项目>/.codely-cli/settings.json` | 由 `chatgraphic/install.js` 注册的 AfterAgent Hook（作用域跟随安装位置：用户级全局生效 / workspace 项目级，均按项目信任） |
 | `chatgraphic/hook.js` | 触发器：防递归 / 去重 / 取代旧解析 / 异步派发，毫秒级退出 |
 | `chatgraphic/parser.js` | 解析 worker：转录归一化（auto-save JSON / 数组 / 实时 JSONL / Codex rollout / Claude 转录 容错）→ 精简 → 同链路解析（引擎路由：Claude 会话 `claude -p`、Codex 会话 `codex exec`、其余 `codely -p`）→ graph.json；v0.2.0 起支持增量解析（滚动窗口 + 图状态摘要，全量兜底） |
 | `chatgraphic/parse-prompt.md` | 解析提示词：分型 + 三问准入 + 置信分级 + 严格 JSON schema + 上一版 id 稳定性 |
 | `chatgraphic/serve.js` | 零依赖本地服务：viewer / graph.json / transcript.json / version / status |
-| `chatgraphic/install.js` | 用户级 Hook 注册/移除（`--uninstall` / `--status`），扩展安装方式配套 |
+| `chatgraphic/install.js` | Codely Hook 注册/移除（`--uninstall` / `--status`），作用域跟随安装位置，扩展安装方式配套 |
 | `chatgraphic/codex-hook.js` | Codex notify 触发器：`agent-turn-complete` → 按 thread-id 定位 rollout → 同款秒退/去重/取代旧解析/派发 |
 | `chatgraphic/install-codex.js` | Codex notify 注册/移除（写入 `~/.codex/config.toml`，顶层键插到首个表头前、幂等、他人占用不覆盖） |
 | `chatgraphic/claude-hook.js` | Claude Code Stop Hook 触发器：stdin JSON（transcript_path + session_id）→ 同款秒退/去重/取代旧解析/派发 |
 | `chatgraphic/install-claude.js` | Claude Stop Hook 注册/移除（写入 `~/.claude/settings.json`，数组并存追加、幂等、他人条目保留） |
 | `chatgraphic/viewer.html` | 只读导图：分层布局、生长动画、节点回链原文、拖拽缩放、导出 PNG/Markdown |
-| `chatgraphic/test/` | 47 个离线测试用例（`npm test`，node --test；不调用 codely/LLM） |
+| `chatgraphic/test/` | 58 个离线测试用例（`npm test`，node --test；不调用 codely/codex/claude） |
 | `chatgraphic/work/` | 运行时产物：`sessions/<会话id>/`（graph.json / transcript.json / status.json …）、`current.json`（最新会话指针）、`hook.log`（全链路日志） |
 
 ## 与 v0.3 的对齐与边界
 
-- ✅ **轮次级实时**：AfterAgent（每轮 Agent 结束）触发，全量重解析，Hook 不阻塞对话
-- ✅ **同链路同边界**：解析即 `codely -p`（同一模型/认证/数据边界），运行在 tmpdir 不加载项目配置；渲染、存储、导出全程本地
+- ✅ **轮次级实时**：三端各自轮次结束事件触发（Codely AfterAgent / Codex notify / Claude Stop），Hook 不阻塞对话
+- ✅ **同链路同边界**：解析引擎按转录来源路由（`codely -p` / `codex exec` / `claude -p`），与对话同一模型/认证/数据边界，运行在 tmpdir 不加载项目配置；渲染、存储、导出全程本地
 - ✅ **三问准入 / 置信分级**：不可执行、非决策、非变更的内容不上图；低置信进「待确认」
 - ✅ **证据优先**：任务状态由文件变更/命令执行等真实证据驱动
-- ✅ **降级与止损**：`enabled:false` 一键关；解析失败保留上一版导图；历史会话可手动补跑
-- ⛔ POC 范围外（v0.3 Phase 2+）：秒级增量解析、节点编辑、版本快照回滚、多会话合并、分享
+- ✅ **降级与止损**：`enabled:false` 一键关三端；解析失败保留上一版导图；历史会话可手动补跑
+- ⛔ POC 范围外（v0.3 Phase 2+）：节点编辑、版本快照回滚、多会话合并、分享
