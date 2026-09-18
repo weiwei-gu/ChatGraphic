@@ -530,7 +530,8 @@ function normalize(parsed, roundCount) {
     type,
     title: str(x.title, 60) || '未命名',
     parent: defParent,
-    note: str(x.note, 80),
+    // note 上限 120：与「1~2 句、写具体信息」规则配套（80 会让两句话被硬切破句）
+    note: str(x.note, 120),
     roundRefs: refs(x.roundRefs),
     confidence: conf(x.confidence)
   }));
@@ -662,18 +663,20 @@ async function main() {
     }
 
     atomicWrite(path.join(sd, 'transcript.json'), JSON.stringify({ rounds: rounds.map(viewRound) }, null, 1));
-    let lean, payloadInc = null, payloadFull;
+    let lean, payloadInc = null;
+    const leanFull = renderLean(rounds); // 全量输入（全量模式 / 增量失败回退共用）必须覆盖全部轮次
     if (mode === 'incremental') {
       const newRounds = rounds.slice(prevGraph.parsedRoundCount); // 滚动窗口：只发新增轮次
       lean = renderLean(newRounds);
       payloadInc = buildPromptIncremental(lean, prevGraph);      // 图状态摘要 + 新增轮次
       log('parser: [' + sessionId + '] 增量模式 · 新增 ' + newRounds.length + ' 轮 · 图状态 ' + (prevGraph.nodes || []).length + ' 节点 · lean ' + lean.length + ' 字符');
     } else {
-      lean = renderLean(rounds);
+      lean = leanFull;
       log('parser: [' + sessionId + '] 全量模式 · ' + rounds.length + ' 轮 · lean ' + lean.length + ' 字符');
     }
     fs.writeFileSync(path.join(sd, 'lean.txt'), lean);
-    payloadFull = buildPrompt(lean, sd);
+    // 回退全量不得复用增量 lean：那只有新增轮次，历史内容会整体丢失（伪全量，图必然退化）
+    const payloadFull = buildPrompt(leanFull, sd);
 
     // 尝试序列：增量失败 / 疑似丢节点 → 回退全量（全量保留一次重试）
     // 引擎路由（同链路）：Codex rollout → codex exec；Claude 会话转录 → claude -p；其余 → codely -p
@@ -682,6 +685,11 @@ async function main() {
     let norm = null, usedMode = mode, lastErr = null, diff = null;
     for (let i = 0; i < attempts.length && !norm; i++) {
       const m = attempts[i];
+      if (m === 'full' && mode === 'incremental' && lean !== leanFull) {
+        lean = leanFull;
+        fs.writeFileSync(path.join(sd, 'lean.txt'), lean); // lean.txt 记录实际发送的输入，回退后须换成完整转录
+        log('parser: [' + sessionId + '] 回退全量 · lean 切换为完整转录 ' + lean.length + ' 字符');
+      }
       try {
         const engineCall = { codex: runCodex, claude: runClaude, codely: runCodely }[engine];
         const engineTag = { codex: 'codex exec', claude: 'claude -p', codely: 'codely' }[engine];
