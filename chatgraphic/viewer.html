@@ -281,7 +281,9 @@ const FONT="-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','M
 const MONO="ui-monospace,Menlo,monospace";
 const $=s=>document.querySelector(s);
 /* embed 模式（?embed=1）：终端内嵌时侧栏抽屉化，独立打开 viewer 不带参数则行为不变 */
-const EMBED=new URLSearchParams(location.search).has('embed');
+const QSP=new URLSearchParams(location.search);
+const EMBED=QSP.has('embed');
+const PIN0=QSP.get('session'); /* ?session=<sid> 初始固定该会话（工作台会话卡直达） */
 if(EMBED)document.body.classList.add('embed');
 function svgEl(tag,attrs,parent){const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n}
 function txt(parent,attrs,s){const t=svgEl('text',attrs,parent);t.textContent=s;return t}
@@ -325,6 +327,7 @@ const CAT_BY_ID={};CATS.forEach(c=>CAT_BY_ID[c.id]=c);
 const edgeLayer=$('#edges'),nodeLayer=$('#nodesG'),world=$('#world');
 let graph=null,transcript=null,statusSt={state:'idle'};
 let pinned=null,curSession=null,sessionsCache=[],verCache={};
+if(PIN0)pinned=PIN0; /* URL ?session=<sid> 预置固定（须在首次 poll 前生效） */
 const nodes=new Map();
 
 /* ================= 节点绘制 ================= */
