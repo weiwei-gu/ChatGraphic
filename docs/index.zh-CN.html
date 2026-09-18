@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChatGraphic · Product Description v0.3</title>
+<title>ChatGraphic · 产品描述 v0.3</title>
 <style>
   :root{
     --blue:#2563EB; --blue-dark:#1D4ED8; --blue-tint:#EFF6FF;
@@ -236,9 +236,9 @@
     display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;
     color:var(--faint);font-size:12.5px;
   }
-  /* ===== Demo grow animation：the mock map grows in a loop (14s per cycle)
-     Nodes pop in from left to right (staggered by --d) → hold → the cg-all group
-     fades out together at 12–12.9s → dark until 14s → regrow from the left ===== */
+  /* ===== Demo grow animation：产品形态演示图循环生长（14s 一轮）
+     从左到右逐个长出（子元素按 --d 延迟入场）→ 停驻展示 → cg-all 父组
+     在 12~12.9s 整体一起淡出 → 全暗至 14s → 重新从左到右生长 ===== */
   .mockup-card svg .cg-all{animation:cgAll 14s infinite both}
   .mockup-card svg .cg-n{transform-box:fill-box;transform-origin:50% 50%;animation:cgN 14s infinite both;animation-delay:calc(var(--d,0)*1s)}
   .mockup-card svg .cg-e path{stroke-dasharray:520;stroke-dashoffset:520;animation:cgE 14s infinite both;animation-delay:calc(var(--d,0)*1s)}
@@ -274,16 +274,16 @@
   <div class="container header-inner">
     <div class="logo">
       <span class="logo-mark">C</span>
-      ChatGraphic<small>Product Description v0.3</small>
+      ChatGraphic<small>产品描述 v0.3</small>
     </div>
     <nav>
-      <a href="#form">Product Form</a>
-      <a href="#why">Why</a>
-      <a href="#features">Core Features</a>
-      <a href="#tech">How It Works</a>
-      <a href="#risks">Risks</a>
+      <a href="#form">产品形态</a>
+      <a href="#why">为什么做</a>
+      <a href="#features">核心功能</a>
+      <a href="#tech">技术方案</a>
+      <a href="#risks">风险与对策</a>
       <a href="#faq">FAQ</a>
-      <a href="index.zh-CN.html">中文版</a>
+      <a href="index.html">English</a>
     </nav>
     <span class="header-date">2026-09-17</span>
   </div>
@@ -292,85 +292,85 @@
 <!-- ================= HERO ================= -->
 <div class="hero">
   <div class="container">
-    <span class="eyebrow">Session mind maps for three CLIs · terminal + map in one</span>
-    <h1>Chat with AI, and <em>watch the mind map grow in real time</em></h1>
+    <span class="eyebrow">三端会话导图 · 终端 + 导图一体</span>
+    <h1>和 AI 对话的同时，<em>看着导图实时生长</em></h1>
     <p class="hero-sub">
-      <strong>ChatGraphic</strong> turns AI coding CLI conversations into mind maps as they happen:
-      parsing runs <strong>while the conversation is live</strong> — from the <strong>very first message</strong> to <strong>options, the final choice and its tasks</strong>,
-      the map grows with the discussion. Finish the chat, get the map. Never lose track, keep the results.
-      Works with <strong>Codely / Codex CLI / Claude Code</strong>; since <strong>v0.3.0</strong> the repo ships the TerminalServer web terminal —
-      chat in a browser terminal, and one switch unfolds the live map on the <strong>same page</strong>.
+      <strong>ChatGraphic</strong> 把 AI 编程 CLI 的对话实时长成导图：
+      对话<strong>进行中</strong>即实时解析——从<strong>第一句对话</strong>到<strong>方案、最终选择与对应任务</strong>，
+      导图随讨论同步生长，聊完即得图。讨论不迷路，成果可沉淀。
+      已接入 <strong>Codely / Codex CLI / Claude Code</strong> 三端；<strong>v0.3.0</strong> 起内置 TerminalServer 网页终端——
+      在浏览器终端里聊，一个开关即在<strong>同页</strong>展开实时导图。
     </p>
     <div class="hero-tags">
-      <span>Three CLIs · Codely / Codex CLI / Claude Code</span>
-      <span>Live generation during the chat · turn-level to start</span>
-      <span>Web terminal in one · flip a switch to unfold (v0.3.0)</span>
-      <span>Rendering & storage fully local · parsing shares the chat's data boundary</span>
-      <span>Export to PNG / Markdown</span>
+      <span>三端接入 · Codely / Codex CLI / Claude Code</span>
+      <span>对话中实时生成 · 轮次级起步</span>
+      <span>网页终端一体 · 开关即展开（v0.3.0）</span>
+      <span>渲染与存储全程本地 · 解析与对话同数据边界</span>
+      <span>导出 PNG / Markdown</span>
     </div>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="#form">See the product form ↓</a>
-      <a class="btn btn-ghost" href="https://github.com/weiwei-gu/ChatGraphic" target="_blank">GitHub repo</a>
-      <a class="btn btn-ghost" href="#revision">v0.3 revision notes</a>
+      <a class="btn btn-primary" href="#form">查看产品形态 ↓</a>
+      <a class="btn btn-ghost" href="https://github.com/weiwei-gu/ChatGraphic" target="_blank">GitHub 仓库</a>
+      <a class="btn btn-ghost" href="#revision">v0.3 修订说明</a>
     </div>
   </div>
 </div>
 
-<!-- ================= Positioning ================= -->
+<!-- ================= 定位声明 ================= -->
 <section class="positioning" id="positioning">
   <div class="container">
     <div class="pos-grid">
       <div class="pos">
-        <div class="pos-ic">P</div>
+        <div class="pos-ic">位</div>
         <div>
-          <b>Position: a Codely feature, incubated in the open</b>
-          <p>The end state is a built-in Codely view — not a standalone product, no separate site, no competing entry point; scheduled and reviewed as a feature.</p>
+          <b>定位：Codely 的 feature，以孵化方式推进</b>
+          <p>终局是 Codely 内置视图——不做独立产品、不建独立网站、不与宿主争夺入口；按 feature 立项路径排期与评审。</p>
         </div>
       </div>
       <div class="pos">
-        <div class="pos-ic">R</div>
+        <div class="pos-ic">路</div>
         <div>
-          <b>Route: live first; Phase 1 is "turn-level" only</b>
-          <p>Parsing is triggered by the Codely hook when a turn ends; the MVP does a full re-parse (seconds for one session). Incremental parsing and second-level updates land in Phase 2. If behavior data doesn't clear the bar, it degrades to a post-hoc tool.</p>
+          <b>路径：实时优先，Phase 1 只做「轮次级」</b>
+          <p>依托 Codely Hook 在轮次结束触发解析，MVP 全量重解析（单会话秒级）；增量解析与秒级在 Phase 2 做实。行为数据不过线，即降级为事后工具。</p>
         </div>
       </div>
       <div class="pos">
-        <div class="pos-ic">B</div>
+        <div class="pos-ic">界</div>
         <div>
-          <b>Boundary: never widen the data exposure surface</b>
-          <p>Parsing reuses Codely's existing model link and data boundary; rendering, storage and export are fully local and work offline.</p>
+          <b>边界：不扩大数据暴露面</b>
+          <p>解析复用 Codely 既有模型链路与数据边界；渲染、存储、导出全程本地，离线可用。</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= v0.3 revision ================= -->
+<!-- ================= v0.3 修订说明 ================= -->
 <section class="revision" id="revision">
   <div class="container">
     <details>
-      <summary>v0.3 revision notes (vs. v0.2: the validation strategy switches to "live first")</summary>
+      <summary>v0.3 修订说明（相对 v0.2：验证策略改为「实时优先」）</summary>
       <ol>
-        <li><b>Assumption corrected:</b>v0.2 validated via "generate the map after the chat" — weak evidence for the core question "do people look at the map while chatting", prone to false positives. v0.3 puts the map into the conversation itself.</li>
-        <li><b>Live at low cost:</b>the live channel relies on the Codely hook (file watching was evaluated and ruled out); the MVP needs exactly one event — "turn ended" — plus a full re-parse. Incremental parsing, finer events and incremental layout are Phase 2 optimizations.</li>
-        <li><b>Tiered promises:</b>Phase 1 = turn-level live (updated within seconds of a turn ending), Phase 2 = second-level (fine-grained events + incremental parsing). No repeat of v0.1's over-promise of second-level from day one.</li>
-        <li><b>Fallback written down:</b>if Phase 1 behavior data shows "nobody looks at the map during chats, only after" → degrade to a post-hoc tool; the parsing capability feeds Codely session summaries, nothing wasted.</li>
-        <li><b>Metrics re-based on live behavior:</b>direct signals like "opened the panel during the conversation" become the core evidence.</li>
-        <li><b>All other v0.2 corrections preserved:</b>data boundary wording, host-build-out risk, feature positioning, three-question admission line, read-only first, observable metrics.</li>
+        <li><b>验证假设修正：</b>放弃 v0.2 以「事后出图」为代理验证的设计——事后验证对核心假设「聊的时候看不看图」证据力弱、易假阳性；改为直接把图放进对话中验证。</li>
+        <li><b>实时的低成本实现：</b>实时通道依赖 Codely Hook（文件监听经评估不可行）；MVP 只要求「轮次结束」一种事件 + 全量重解析，增量解析、细粒度事件与增量布局是 Phase 2 的优化项。</li>
+        <li><b>实时分层承诺：</b>Phase 1 = 轮次级实时（轮次结束数秒内更新），Phase 2 = 秒级（细粒度事件 + 增量解析）；不重复 v0.1 一上来就承诺秒级的过度承诺。</li>
+        <li><b>降级路径写死：</b>若 Phase 1 行为数据显示「聊时无人看图、仅聊后看」→ 降级为事后工具，解析能力反哺 Codely 会话摘要，不浪费。</li>
+        <li><b>指标改为实时行为口径：</b>以「对话进行中打开面板」等直接行为作为核心证据。</li>
+        <li><b>v0.2 其余修正全部保留：</b>数据边界口径、宿主内建风险、feature 定位、三问准入线、只读先行、指标可观测原则。</li>
       </ol>
     </details>
   </div>
 </section>
 
-<!-- ================= Product form ================= -->
+<!-- ================= 产品形态 ================= -->
 <section id="form">
   <div class="container">
     <div class="sec-head">
       <span class="sec-label">Product Form</span>
-      <h2>The product form · one map to see it all</h2>
+      <h2>产品形态 · 一图看清</h2>
       <p class="sec-desc">
-        The map starts from the <strong>first message</strong> and <strong>grows live as the conversation proceeds</strong>: <strong>options discussed → final choice → its tasks</strong>,
-        with decisions and file changes summarized automatically. Phase 1 promises <strong>turn-level live</strong> (updated within seconds of each turn); second-level and incremental parsing land in Phase 2; the skeleton uses <strong>templated categories</strong> (reliability first).
+        导图以<strong>第一句对话</strong>为起点，<strong>对话进行中实时生长</strong>：<strong>方案讨论 → 最终选择 → 对应任务</strong>，
+        并自动归纳决策与文件变更。Phase 1 承诺<strong>轮次级实时</strong>（每轮结束数秒内更新），秒级与增量解析在 Phase 2 做实；骨架采用<strong>模板化分类</strong>（可靠优先）。
       </p>
     </div>
 
@@ -391,10 +391,10 @@
           <circle cx="24" cy="22" r="5.5" fill="#FF5F57" stroke="rgba(0,0,0,.06)"/>
           <circle cx="44" cy="22" r="5.5" fill="#FEBC2E" stroke="rgba(0,0,0,.06)"/>
           <circle cx="64" cy="22" r="5.5" fill="#28C840" stroke="rgba(0,0,0,.06)"/>
-          <text x="520" y="27" text-anchor="middle" font-size="13" font-weight="500" fill="#475569">Login refactor · Session Map — ChatGraphic</text>
+          <text x="520" y="27" text-anchor="middle" font-size="13" font-weight="500" fill="#475569">登录模块重构 · 会话导图 — ChatGraphic</text>
           <circle cx="866" cy="23" r="3.5" fill="#16A34A"/>
           <circle cx="866" cy="23" r="6.5" fill="none" stroke="#BBF7D0" class="live-pulse"/>
-          <text x="1020" y="27" text-anchor="end" font-size="11" font-weight="600" fill="#16A34A">Live · follows the chat</text>
+          <text x="1020" y="27" text-anchor="end" font-size="11" font-weight="600" fill="#16A34A">实时监听中 · 随对话更新</text>
 
           <!-- toolbar -->
           <rect x="0" y="44" width="1040" height="40" fill="#FFFFFF"/>
@@ -403,63 +403,63 @@
           <circle cx="28" cy="64" r="3" fill="#2563EB"/>
           <text x="36" y="67.5" font-size="11.5" fill="#475569">Codely ▾</text>
           <rect x="140" y="52" width="72" height="24" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
-          <text x="176" y="67.5" text-anchor="middle" font-size="11.5" fill="#475569">Regenerate</text>
+          <text x="176" y="67.5" text-anchor="middle" font-size="11.5" fill="#475569">重新生成</text>
           <rect x="220" y="52" width="84" height="24" rx="6" fill="#ECFDF5" stroke="#BBF7D0"/>
-          <text x="262" y="67.5" text-anchor="middle" font-size="11" font-weight="600" fill="#15803D">Live · on</text>
+          <text x="262" y="67.5" text-anchor="middle" font-size="11" font-weight="600" fill="#15803D">实时生成 · 开</text>
           <line x1="312" y1="56" x2="312" y2="72" stroke="#EDF2F9"/>
           <rect x="316" y="52" width="72" height="24" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
-          <text x="352" y="67.5" text-anchor="middle" font-size="11.5" fill="#475569">Auto layout</text>
+          <text x="352" y="67.5" text-anchor="middle" font-size="11.5" fill="#475569">自动布局</text>
           <rect x="396" y="52" width="62" height="24" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
           <text x="427" y="67.5" text-anchor="middle" font-size="11.5" fill="#475569">100% ▾</text>
           <rect x="838" y="52" width="110" height="24" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
-          <text x="893" y="67.5" text-anchor="middle" font-size="11.5" fill="#475569">Export MD</text>
+          <text x="893" y="67.5" text-anchor="middle" font-size="11.5" fill="#475569">导出 Markdown</text>
           <rect x="958" y="52" width="66" height="24" rx="6" fill="#2563EB"/>
-          <text x="991" y="67.5" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">Export PNG</text>
+          <text x="991" y="67.5" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">导出 PNG</text>
 
           <!-- left panel : session list -->
           <rect x="0" y="84" width="190" height="536" fill="#FBFCFE"/>
           <line x1="190" y1="84" x2="190" y2="620" stroke="#E8EEF5"/>
-          <text x="18" y="110" font-size="12" font-weight="700" fill="#0F172A">Sessions</text>
-          <text x="168" y="110" text-anchor="end" font-size="10.5" fill="#94A3B8">14</text>
+          <text x="18" y="110" font-size="12" font-weight="700" fill="#0F172A">会话记录</text>
+          <text x="168" y="110" text-anchor="end" font-size="10.5" fill="#94A3B8">14 个</text>
           <!-- source filters -->
           <rect x="14" y="122" width="80" height="24" rx="12" fill="#EFF6FF" stroke="#BFDBFE"/>
           <circle cx="26" cy="134" r="3" fill="#2563EB"/>
           <text x="33" y="138" font-size="10" fill="#1E40AF" font-weight="600">Codely</text>
           <rect x="98" y="122" width="62" height="24" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
           <circle cx="110" cy="134" r="3" fill="#94A3B8"/>
-          <text x="117" y="138" font-size="10" fill="#475569" font-weight="600">All</text>
+          <text x="117" y="138" font-size="10" fill="#475569" font-weight="600">全部</text>
           <!-- sessions -->
           <rect x="12" y="158" width="166" height="58" rx="10" fill="#EFF6FF" stroke="#BFDBFE"/>
-          <text x="24" y="180" font-size="12" font-weight="600" fill="#0F172A">Login refactor</text>
-          <text x="24" y="196" font-size="9.5" fill="#64748B">Codely · 27 turns</text>
-          <text x="24" y="210" font-size="9" fill="#2563EB" font-weight="600">● Map ready · just now</text>
+          <text x="24" y="180" font-size="12" font-weight="600" fill="#0F172A">登录模块重构</text>
+          <text x="24" y="196" font-size="9.5" fill="#64748B">Codely · 27 轮对话</text>
+          <text x="24" y="210" font-size="9" fill="#2563EB" font-weight="600">● 导图已生成 · 刚刚</text>
           <rect x="12" y="222" width="166" height="58" rx="10" fill="#FFFFFF" stroke="#E8EEF5"/>
-          <text x="24" y="244" font-size="12" font-weight="600" fill="#334155">Build speed</text>
-          <text x="24" y="260" font-size="9.5" fill="#94A3B8">Codely · 14 turns · 09-13</text>
+          <text x="24" y="244" font-size="12" font-weight="600" fill="#334155">构建速度优化</text>
+          <text x="24" y="260" font-size="9.5" fill="#94A3B8">Codely · 14 轮 · 09-13</text>
           <rect x="12" y="286" width="166" height="58" rx="10" fill="#FFFFFF" stroke="#E8EEF5"/>
-          <text x="24" y="308" font-size="12" font-weight="600" fill="#334155">DB migration</text>
-          <text x="24" y="324" font-size="9.5" fill="#94A3B8">Codely · 41 turns · 09-12</text>
+          <text x="24" y="308" font-size="12" font-weight="600" fill="#334155">数据库迁移讨论</text>
+          <text x="24" y="324" font-size="9.5" fill="#94A3B8">Codely · 41 轮 · 09-12</text>
           <rect x="12" y="350" width="166" height="58" rx="10" fill="#FFFFFF" stroke="#E8EEF5"/>
-          <text x="24" y="372" font-size="12" font-weight="600" fill="#334155">Homepage redesign</text>
-          <text x="24" y="388" font-size="9.5" fill="#94A3B8">Codely · 9 turns · 09-11</text>
+          <text x="24" y="372" font-size="12" font-weight="600" fill="#334155">首页改版方案</text>
+          <text x="24" y="388" font-size="9.5" fill="#94A3B8">Codely · 9 轮 · 09-11</text>
           <rect x="12" y="414" width="166" height="58" rx="10" fill="#FFFFFF" stroke="#E8EEF5"/>
-          <text x="24" y="436" font-size="12" font-weight="600" fill="#334155">API rate limiting</text>
-          <text x="24" y="452" font-size="9.5" fill="#94A3B8">Codely · 18 turns · 09-10</text>
+          <text x="24" y="436" font-size="12" font-weight="600" fill="#334155">接口限流设计</text>
+          <text x="24" y="452" font-size="9.5" fill="#94A3B8">Codely · 18 轮 · 09-10</text>
           <line x1="14" y1="492" x2="176" y2="492" stroke="#EEF2F7"/>
           <circle cx="20" cy="512" r="3.5" fill="#16A34A"/>
           <circle cx="20" cy="512" r="6.5" fill="none" stroke="#BBF7D0" class="live-pulse"/>
-          <text x="32" y="516" font-size="10" font-weight="600" fill="#16A34A">Live · grows while you chat</text>
-          <text x="32" y="532" font-size="9" fill="#94A3B8">Local parsing · data stays local</text>
+          <text x="32" y="516" font-size="10" font-weight="600" fill="#16A34A">实时监听中 · 边聊边生成</text>
+          <text x="32" y="532" font-size="9" fill="#94A3B8">本地解析 · 数据不出本机</text>
           <rect x="14" y="556" width="162" height="30" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="4 3"/>
-          <text x="95" y="575" text-anchor="middle" font-size="10.5" fill="#64748B">+ Import other sessions</text>
+          <text x="95" y="575" text-anchor="middle" font-size="10.5" fill="#64748B">+ 导入其他会话文件</text>
 
           <!-- canvas -->
           <rect x="190" y="84" width="660" height="536" fill="#FFFFFF"/>
           <rect x="190" y="84" width="660" height="536" fill="url(#grid)"/>
-          <text x="210" y="110" font-size="11" fill="#94A3B8">Starts from the first message · the map grows live with the chat</text>
+          <text x="210" y="110" font-size="11" fill="#94A3B8">从第一句对话开始 · 导图随对话实时生长</text>
 
           <g class="cg-all">
-          <!-- ===== conversation map : branches（staggered grow animation, --d = appearance time in seconds） ===== -->
+          <!-- ===== conversation map : branches（分阶段生长动画，--d 为出现时刻/秒） ===== -->
           <g class="cg-e" style="--d:.5" fill="none" stroke-linecap="round">
             <path d="M342 348 C372 330, 360 192, 380 174" stroke="#8B5CF6" stroke-width="4.5" opacity=".9"/>
             <path d="M342 356 C366 352, 362 306, 380 300" stroke="#D97706" stroke-width="4" opacity=".85"/>
@@ -492,65 +492,65 @@
 <g class="cg-n" style="--d:0">          <polygon points="206,342 194,352 206,362" fill="#0F172A"/>
           <rect x="206" y="330" width="136" height="68" rx="12" fill="#0F172A"/>
           <circle cx="222" cy="330" r="11" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
-          <text x="222" y="333.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Me</text>
-          <text x="238" y="348" font-size="8.5" font-weight="700" fill="#93C5FD">Start · turn 1</text>
-          <text x="218" y="366" font-size="10.5" font-weight="600" fill="#FFFFFF">Refactor the login</text>
-          <text x="218" y="382" font-size="10.5" font-weight="600" fill="#E2E8F0">module, wire OAuth2.0</text>
-          <text x="206" y="412" font-size="8.5" fill="#94A3B8">✦ Grown from the chat by AI</text></g>
+          <text x="222" y="333.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">我</text>
+          <text x="238" y="348" font-size="8.5" font-weight="700" fill="#93C5FD">起点 · 第 1 句对话</text>
+          <text x="218" y="366" font-size="10.5" font-weight="600" fill="#FFFFFF">帮我重构登录模块，</text>
+          <text x="218" y="382" font-size="10.5" font-weight="600" fill="#E2E8F0">接入 OAuth2.0</text>
+          <text x="206" y="412" font-size="8.5" fill="#94A3B8">✦ AI 从对话自动生成</text></g>
 
-          <!-- options -->
+          <!-- 方案讨论 -->
 <g class="cg-n" style="--d:0.9">          <rect x="380" y="156" width="96" height="32" rx="16" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="1.6"/>
-          <text x="428" y="176" text-anchor="middle" font-size="12.5" font-weight="700" fill="#6D28D9">Options · 2</text></g>
+          <text x="428" y="176" text-anchor="middle" font-size="12.5" font-weight="700" fill="#6D28D9">方案讨论 · 2</text></g>
 
 <g class="cg-n" style="--d:1.9">          <rect x="500" y="116" width="150" height="48" rx="10" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.6"/>
           <circle cx="516" cy="132" r="7" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.3"/>
           <path d="M512.8 132.3 l2.3 2.3 l4.6 -4.6" fill="none" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round"/>
           <text x="530" y="136" font-size="10.5" font-weight="700" fill="#0F172A">JWT + RefreshToken</text>
-          <text x="530" y="152" font-size="8.5" font-weight="700" fill="#16A34A">✓ Final choice · 14:02</text></g>
+          <text x="530" y="152" font-size="8.5" font-weight="700" fill="#16A34A">✓ 最终选择 · 14:02 确定</text></g>
 
 <g class="cg-n" style="--d:2.05">          <rect x="500" y="180" width="150" height="48" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.4"/>
           <circle cx="516" cy="196" r="7" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.3"/>
           <path d="M513.2 193.2 l5.6 5.6 M518.8 193.2 l-5.6 5.6" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
-          <text x="530" y="200" font-size="10.5" font-weight="600" fill="#64748B">Session plan</text>
-          <text x="530" y="216" font-size="8.5" fill="#94A3B8">✕ Rejected · mobile-limited</text></g>
+          <text x="530" y="200" font-size="10.5" font-weight="600" fill="#64748B">Session 方案</text>
+          <text x="530" y="216" font-size="8.5" fill="#94A3B8">✕ 已否决 · 移动端受限</text></g>
 
           <!-- tasks under the chosen plan -->
 <g class="cg-n" style="--d:4">          <rect x="676" y="94" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
           <circle cx="690" cy="109" r="6.5" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.2"/>
           <path d="M687 109 l2.2 2.2 l4 -4" fill="none" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round"/>
-          <text x="702" y="113" font-size="10.5" font-weight="600" fill="#0F172A">Integrate OAuth2.0</text>
-          <text x="830" y="113" text-anchor="end" font-size="8.5" font-weight="600" fill="#16A34A">Done</text></g>
+          <text x="702" y="113" font-size="10.5" font-weight="600" fill="#0F172A">接入 OAuth2.0</text>
+          <text x="830" y="113" text-anchor="end" font-size="8.5" font-weight="600" fill="#16A34A">已完成</text></g>
 <g class="cg-n" style="--d:4.15">          <rect x="676" y="140" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
           <circle cx="690" cy="155" r="6.5" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.2"/>
           <circle cx="690" cy="155" r="1.8" fill="#2563EB"/>
-          <text x="702" y="159" font-size="10.5" font-weight="600" fill="#0F172A">Fix refresh race</text>
-          <text x="830" y="159" text-anchor="end" font-size="8.5" font-weight="600" fill="#2563EB">Doing</text></g>
+          <text x="702" y="159" font-size="10.5" font-weight="600" fill="#0F172A">修复刷新竞态</text>
+          <text x="830" y="159" text-anchor="end" font-size="8.5" font-weight="600" fill="#2563EB">进行中</text></g>
 <g class="cg-n" style="--d:4.3">          <rect x="676" y="186" width="166" height="30" rx="8" fill="#FFFFFF" stroke="#BFDBFE"/>
           <circle cx="690" cy="201" r="6.5" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.2"/>
           <circle cx="690" cy="201" r="2.2" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
-          <text x="702" y="205" font-size="10.5" font-weight="600" fill="#64748B">Add integration tests</text>
-          <text x="830" y="205" text-anchor="end" font-size="8.5" font-weight="600" fill="#94A3B8">To-do</text></g>
+          <text x="702" y="205" font-size="10.5" font-weight="600" fill="#64748B">补充集成测试</text>
+          <text x="830" y="205" text-anchor="end" font-size="8.5" font-weight="600" fill="#94A3B8">待办</text></g>
 
           <!-- live : node being parsed right now -->
           <path class="cg-le" style="--d:4.6" d="M650 150 C662 170, 666 232, 676 246" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-dasharray="5 4"/>
 <g class="cg-n" style="--d:4.9">          <rect x="676" y="232" width="166" height="30" rx="8" fill="#F8FAFC" stroke="#60A5FA" stroke-dasharray="5 3"/>
           <circle cx="692" cy="247" r="6.5" fill="none" stroke="#60A5FA" stroke-width="1.6" stroke-dasharray="20 8" stroke-linecap="round" class="live-spin"/>
-          <text x="706" y="251" font-size="10" font-weight="600" fill="#3B82F6">Parsing new reply…</text>
+          <text x="706" y="251" font-size="10" font-weight="600" fill="#3B82F6">正在解析新回复…</text>
           <text x="830" y="251" text-anchor="end" font-size="8.5" font-weight="700" fill="#16A34A" class="live-pulse">● LIVE</text></g>
 
-          <!-- decisions -->
+          <!-- 决策记录 -->
 <g class="cg-n" style="--d:1">          <rect x="380" y="284" width="96" height="32" rx="16" fill="#FFF7ED" stroke="#D97706" stroke-width="1.4"/>
-          <text x="428" y="304" text-anchor="middle" font-size="12.5" font-weight="700" fill="#B45309">Decisions · 2</text></g>
+          <text x="428" y="304" text-anchor="middle" font-size="12.5" font-weight="700" fill="#B45309">决策记录 · 2</text></g>
 <g class="cg-n" style="--d:2.5">          <rect x="500" y="270" width="150" height="30" rx="8" fill="#FFFFFF" stroke="#FDE68A"/>
           <polygon points="514,285 520,289 514,293 508,289" fill="#D97706"/>
-          <text x="528" y="289" font-size="10" font-weight="600" fill="#0F172A">httpOnly cookie tokens</text>
+          <text x="528" y="289" font-size="10" font-weight="600" fill="#0F172A">Token 存 httpOnly Cookie</text>
           <rect x="500" y="310" width="150" height="30" rx="8" fill="#FFFFFF" stroke="#FDE68A"/>
           <polygon points="514,325 520,329 514,333 508,329" fill="#D97706"/>
-          <text x="528" y="329" font-size="10" font-weight="600" fill="#0F172A">Refresh window 15 min</text></g>
+          <text x="528" y="329" font-size="10" font-weight="600" fill="#0F172A">刷新窗口 15 分钟</text></g>
 
-          <!-- file changes -->
+          <!-- 文件变更 -->
 <g class="cg-n" style="--d:1.1">          <rect x="380" y="454" width="96" height="32" rx="16" fill="#ECFDF5" stroke="#16A34A" stroke-width="1.4"/>
-          <text x="428" y="474" text-anchor="middle" font-size="12.5" font-weight="700" fill="#15803D">Files · 3</text></g>
+          <text x="428" y="474" text-anchor="middle" font-size="12.5" font-weight="700" fill="#15803D">文件变更 · 3</text></g>
           <g font-family="ui-monospace,Menlo,monospace" class="cg-n" style="--d:3.1">
             <rect x="500" y="425" width="150" height="30" rx="8" fill="#FFFFFF" stroke="#BBF7D0"/>
             <rect x="500" y="431" width="3" height="18" fill="#16A34A"/>
@@ -563,79 +563,79 @@
             <text x="510" y="524" font-size="9.5" fill="#334155">tests/auth.test.ts +88</text>
           </g>
 
-          <!-- open questions -->
+          <!-- 待确认 -->
 <g class="cg-n" style="--d:1.2">          <rect x="380" y="544" width="96" height="32" rx="16" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.4"/>
-          <text x="428" y="564" text-anchor="middle" font-size="12.5" font-weight="700" fill="#64748B">To confirm · 1</text></g>
+          <text x="428" y="564" text-anchor="middle" font-size="12.5" font-weight="700" fill="#64748B">待确认 · 1</text></g>
 <g class="cg-n" style="--d:3.6">          <rect x="500" y="545" width="150" height="30" rx="8" fill="#F8FAFC" stroke="#94A3B8" stroke-dasharray="4 3"/>
-          <text x="575" y="564" text-anchor="middle" font-size="10.5" fill="#64748B">Need single sign-on?</text></g>
+          <text x="575" y="564" text-anchor="middle" font-size="10.5" fill="#64748B">需要单点登录吗？</text></g>
           </g>
 
-          <text x="210" y="604" font-size="9.5" fill="#CBD5E1">The map follows the conversation: options → final choice → tasks → decisions & changes</text>
-          <text x="830" y="604" text-anchor="end" font-size="9.5" font-weight="600" fill="#16A34A" class="live-pulse">● LIVE · map synced with the chat</text>
+          <text x="210" y="604" font-size="9.5" fill="#CBD5E1">导图沿对话脉络生长：方案讨论 → 最终选择 → 对应任务 → 决策与变更</text>
+          <text x="830" y="604" text-anchor="end" font-size="9.5" font-weight="600" fill="#16A34A" class="live-pulse">● LIVE · 导图与对话实时同步</text>
 
           <!-- right panel -->
           <rect x="850" y="84" width="190" height="536" fill="#FBFCFE"/>
           <line x1="850" y1="84" x2="850" y2="620" stroke="#E8EEF5"/>
-          <text x="868" y="112" font-size="13" font-weight="700" fill="#0F172A">Map info</text>
-          <text x="868" y="134" font-size="10" fill="#94A3B8">Source</text>
-          <text x="1024" y="134" text-anchor="end" font-size="11" fill="#0F172A">Codely · 27 turns</text>
-          <text x="868" y="158" font-size="10" fill="#94A3B8">Start</text>
-          <text x="1024" y="158" text-anchor="end" font-size="11" fill="#0F172A">13:58 · "refactor login"</text>
-          <text x="868" y="182" font-size="10" fill="#94A3B8">Updated</text>
-          <text x="1024" y="182" text-anchor="end" font-size="11" fill="#0F172A">Live · follows the chat</text>
-          <text x="868" y="206" font-size="10" fill="#94A3B8">Detected</text>
-          <text x="1024" y="206" text-anchor="end" font-size="11" fill="#0F172A">2 opt · 3 tasks · 2 dec</text>
-          <text x="868" y="230" font-size="10" fill="#94A3B8">Changes</text>
-          <text x="1024" y="230" text-anchor="end" font-size="11" fill="#0F172A">3 files · +272 lines</text>
+          <text x="868" y="112" font-size="13" font-weight="700" fill="#0F172A">导图信息</text>
+          <text x="868" y="134" font-size="10" fill="#94A3B8">来源会话</text>
+          <text x="1024" y="134" text-anchor="end" font-size="11" fill="#0F172A">Codely · 27 轮</text>
+          <text x="868" y="158" font-size="10" fill="#94A3B8">起点对话</text>
+          <text x="1024" y="158" text-anchor="end" font-size="11" fill="#0F172A">13:58 ·「重构登录」</text>
+          <text x="868" y="182" font-size="10" fill="#94A3B8">更新时间</text>
+          <text x="1024" y="182" text-anchor="end" font-size="11" fill="#0F172A">实时 · 随对话更新</text>
+          <text x="868" y="206" font-size="10" fill="#94A3B8">识别内容</text>
+          <text x="1024" y="206" text-anchor="end" font-size="11" fill="#0F172A">方案2 · 任务3 · 决策2</text>
+          <text x="868" y="230" font-size="10" fill="#94A3B8">代码变更</text>
+          <text x="1024" y="230" text-anchor="end" font-size="11" fill="#0F172A">3 文件 · +272 行</text>
           <line x1="866" y1="246" x2="1024" y2="246" stroke="#EEF2F7"/>
-          <text x="868" y="268" font-size="12" font-weight="700" fill="#0F172A">Actions</text>
+          <text x="868" y="268" font-size="12" font-weight="700" fill="#0F172A">操作</text>
           <rect x="866" y="278" width="158" height="30" rx="8" fill="#2563EB"/>
-          <text x="945" y="297" text-anchor="middle" font-size="11.5" font-weight="600" fill="#fff">Export PNG · hi-res</text>
+          <text x="945" y="297" text-anchor="middle" font-size="11.5" font-weight="600" fill="#fff">导出 PNG · 高清</text>
           <rect x="866" y="314" width="158" height="30" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
-          <text x="945" y="333" text-anchor="middle" font-size="11" fill="#475569">Export Markdown</text>
+          <text x="945" y="333" text-anchor="middle" font-size="11" fill="#475569">导出 Markdown</text>
           <rect x="866" y="350" width="158" height="30" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
-          <text x="945" y="369" text-anchor="middle" font-size="11" fill="#475569">Export SVG / OPML</text>
+          <text x="945" y="369" text-anchor="middle" font-size="11" fill="#475569">导出 SVG / OPML</text>
           <rect x="866" y="386" width="158" height="30" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
-          <text x="945" y="405" text-anchor="middle" font-size="11" fill="#475569">Copy to clipboard</text>
+          <text x="945" y="405" text-anchor="middle" font-size="11" fill="#475569">复制到剪贴板</text>
           <line x1="866" y1="434" x2="1024" y2="434" stroke="#EEF2F7"/>
-          <text x="868" y="456" font-size="12" font-weight="700" fill="#0F172A">Key nodes</text>
+          <text x="868" y="456" font-size="12" font-weight="700" fill="#0F172A">关键节点</text>
           <line x1="874" y1="466" x2="874" y2="550" stroke="#E2E8F0"/>
           <circle cx="874" cy="466" r="3" fill="#0F172A"/>
-          <text x="884" y="470" font-size="10" fill="#475569">13:58 · Start: the request</text>
+          <text x="884" y="470" font-size="10" fill="#475569">13:58 · 起点：提出重构需求</text>
           <circle cx="874" cy="494" r="3" fill="#8B5CF6"/>
-          <text x="884" y="498" font-size="10" fill="#475569">14:02 · JWT vs Session</text>
+          <text x="884" y="498" font-size="10" fill="#475569">14:02 · 对比 JWT / Session</text>
           <circle cx="874" cy="522" r="3" fill="#2563EB"/>
-          <text x="884" y="526" font-size="10" fill="#475569">14:15 · Chose JWT, split tasks</text>
+          <text x="884" y="526" font-size="10" fill="#475569">14:15 · 选定 JWT，拆解任务</text>
           <circle cx="874" cy="550" r="3" fill="#16A34A"/>
-          <text x="884" y="554" font-size="10" fill="#475569">14:31 · 3 file changes</text>
-          <text x="868" y="592" font-size="9.5" fill="#94A3B8">AI nodes stay editable</text>
+          <text x="884" y="554" font-size="10" fill="#475569">14:31 · 汇总 3 文件变更</text>
+          <text x="868" y="592" font-size="9.5" fill="#94A3B8">AI 生成节点支持手动编辑与标注</text>
         </g>
         <rect x="0" y="0" width="1040" height="620" rx="12" fill="none" stroke="#D8E0EB" stroke-width="1.5"/>
       </svg>
     </div>
 
     <div class="mockup-caption">
-      <p>▲ <strong>Live form (mock)</strong>: the map grows with the conversation — options, the final choice and its tasks land on the map while you chat (dashed node = content being parsed right now). Phase 1 is turn-level live — updated within seconds of each turn ending; the interface is a design mock, not a real screenshot.</p>
+      <p>▲ <strong>实时形态示意</strong>：导图随对话生长，方案、最终选择与任务边聊边上图（虚线节点 = 正在解析的新内容）。Phase 1 为轮次级实时——每轮结束后数秒内更新；界面为设计示意稿，非真实截图。</p>
       <div class="legend">
-        <span><i style="background:#0F172A"></i>Start of chat</span>
-        <span><i style="background:#8B5CF6"></i>Options</span>
-        <span><i style="background:#16A34A"></i>Final choice</span>
-        <span><i style="background:#2563EB"></i>Tasks</span>
-        <span><i style="background:#D97706"></i>Decisions</span>
-        <span><i style="background:#94A3B8"></i>To confirm</span>
+        <span><i style="background:#0F172A"></i>起点对话</span>
+        <span><i style="background:#8B5CF6"></i>方案</span>
+        <span><i style="background:#16A34A"></i>最终选择</span>
+        <span><i style="background:#2563EB"></i>任务</span>
+        <span><i style="background:#D97706"></i>决策</span>
+        <span><i style="background:#94A3B8"></i>待确认</span>
       </div>
     </div>
 
-    <!-- real screen recording -->
+    <!-- 真实运行录屏 -->
     <div class="demo-video-card" id="demo">
       <span class="sec-label">Live Demo</span>
-      <h3>Real screen recording</h3>
-      <p class="demo-lead">The real thing, beyond the mock: the ChatDeck workspace opens a terminal, runs <code>codely</code> in the browser for a two-turn chat, and the session map on the left grows by itself (idle waits sped up).</p>
+      <h3>真实运行录屏</h3>
+      <p class="demo-lead">设计稿之外的实际效果：ChatDeck 工作台打开终端，在浏览器里跑 <code>codely</code> 聊两轮，左侧会话导图自动生长（中间等待段已加速）。</p>
       <video controls playsinline preload="metadata" src="assets/demo.mp4"></video>
-      <p class="demo-video-note">▲ Real capture · the v0.3.0 web terminal + session map in one page (recorded locally, ~60s)</p>
+      <p class="demo-video-note">▲ 实拍 · v0.3.0 网页终端 + 会话导图一体形态（本地环境录制，约 60 秒）</p>
     </div>
 
-    <!-- three form factors -->
+    <!-- 形态三要素 -->
     <div class="grid3">
       <div class="card">
         <div class="icon-chip">
@@ -643,9 +643,9 @@
             <path d="M4 6 l5 5 -5 5"/><line x1="12" y1="16" x2="20" y2="16"/>
           </svg>
         </div>
-        <div class="tagline">Entry · hook event driven</div>
-        <h3>Hook on, live on</h3>
-        <p>Register each CLI's "turn ended" event (Codely AfterAgent hook / Codex notify / Claude Stop); parsing fires automatically as each turn ends — the map starts growing with the very first turn (turn-level); finer events and second-level updates land in Phase 2.</p>
+        <div class="tagline">入口 · Hook 事件驱动</div>
+        <h3>挂上 Hook 即实时</h3>
+        <p>注册各端的「轮次结束」事件（Codely AfterAgent Hook / Codex notify / Claude Stop），轮次结束自动触发解析——对话一开始导图就实时生长（轮次级）；更细粒度事件与秒级在 Phase 2。</p>
       </div>
       <div class="card">
         <div class="icon-chip">
@@ -655,9 +655,9 @@
             <path d="M18 13.5 l.9 2.1 2.1.9 -2.1.9 -.9 2.1 -.9 -2.1 -2.1 -.9 2.1 -.9 z"/>
           </svg>
         </div>
-        <div class="tagline">Engine · typed parsing</div>
-        <h3>Typed nodes + admission line</h3>
-        <p>After each turn, the latest session is parsed (MVP: full re-parse — simple and reliable): options, tasks, decisions and changes are typed automatically, the final choice is highlighted; content must pass the "three-question admission line" (see tech) — small talk never lands on the map.</p>
+        <div class="tagline">引擎 · 解析分型</div>
+        <h3>分型 + 上图准入线</h3>
+        <p>每轮结束后解析最新会话（MVP 全量重解析，简单可靠）：方案、任务、决策、变更自动分型，最终选择高亮；内容过「三问准入线」（见技术方案），闲聊不上图。</p>
       </div>
       <div class="card">
         <div class="icon-chip">
@@ -667,86 +667,86 @@
             <path d="M12.5 8.5 h5 M12.5 12 h5 M12.5 15.5 h3.5"/>
           </svg>
         </div>
-        <div class="tagline">UI · built-in first</div>
-        <h3>Read-only first, map follows the chat</h3>
-        <p>The MVP is CLI + read-only preview + export; Phase 2 merges into the built-in Codely panel and opens editing; no standalone site, no competing entry point.</p>
+        <div class="tagline">界面 · 内置优先</div>
+        <h3>只读先行，图随对话走</h3>
+        <p>MVP 为 CLI + 只读预览 + 导出；Phase 2 并入 Codely 内置面板并开放编辑；不做独立网站，不与 Codely 争夺入口。</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= Why ================= -->
+<!-- ================= 为什么做 ================= -->
 <section id="why" class="alt">
   <div class="container">
     <div class="sec-head">
       <span class="sec-label">Why ChatGraphic</span>
-      <h2>Why it's needed</h2>
-      <p class="sec-desc">AI coding tools solved "writing code", but not "keeping the discussion" — in long conversations, the most valuable conclusions are the easiest to lose.</p>
+      <h2>为什么需要它</h2>
+      <p class="sec-desc">AI 编程工具解决了「写代码」，但没有解决「讨论的沉淀」——长对话里，最有价值的结论最容易丢。</p>
     </div>
     <div class="why-grid">
       <ul class="pain-list">
-        <li><span class="x">✕</span><span><b>Conversations are too long; finding conclusions means scrolling.</b>A session easily runs to dozens or hundreds of turns — "the plan we agreed on" takes ages to find again.</span></li>
-        <li><span class="x">✕</span><span><b>Option discussions have no landing spot.</b>A/B trade-offs are buried in the stream; later, no one can say exactly "why we decided this".</span></li>
-        <li><span class="x">✕</span><span><b>Task status lives in your head.</b>The AI remembers the context, humans don't — what's done, what's left, all buried in chat history.</span></li>
-        <li><span class="x">✕</span><span><b>Valuable discussions evaporate.</b>Options and decisions vanish when the session ends — they never make it into docs, reports or reviews.</span></li>
+        <li><span class="x">✕</span><span><b>对话太长，找结论靠翻记录。</b>一次会话动辄几十上百轮，「刚才说好的方案」回头要翻很久。</span></li>
+        <li><span class="x">✕</span><span><b>方案讨论没有落点。</b>A/B 方案的取舍埋在对话流里，事后说不清「当时为什么这么定」。</span></li>
+        <li><span class="x">✕</span><span><b>任务状态靠脑子记。</b>AI 记得上下文，人记不全——做完了什么、还剩什么，全凭翻聊天记录。</span></li>
+        <li><span class="x">✕</span><span><b>有价值的讨论无法沉淀。</b>方案与决策随会话结束而消失，进不了文档、周报和评审材料。</span></li>
       </ul>
       <div class="solution">
-        <div class="kicker">The answer</div>
-        <h3>The session <em>is</em> the map</h3>
+        <div class="kicker">产品方案</div>
+        <h3>会话，即导图</h3>
         <p>
-          The map starts from the first message: every option discussed becomes a branch, the final choice is highlighted,
-          and its tasks unfold beneath it; as the conversation continues, the map grows; one click exports everything — results you can keep, search and share.
-          <br><br>Everything you and the AI discussed grows onto one map.
+          导图从第一句对话起笔：讨论过的方案自动成为分支，最终选定的方案高亮标记，
+          选定方案之下再展开对应任务；对话继续，导图实时生长；一键导出，成果可存、可查、可分享。
+          <br><br>你和 AI 讨论过的一切，都长在同一张图上。
         </p>
         <div class="chips">
-          <span>Auto parsing</span><span>Live growth</span><span>One map to keep</span>
+          <span>自动解析</span><span>实时生长</span><span>一图沉淀</span>
         </div>
       </div>
     </div>
 
-    <p class="moments-lead">It solves the two moments everyone knows:</p>
+    <p class="moments-lead">它解决的，是两个最熟悉的瞬间：</p>
     <div class="moments">
       <div class="card">
-        <div class="tagline">Moment one · after the plan converges</div>
-        <h3>"Where were we?"</h3>
-        <p class="m-before"><span class="no">✕ No map:</span>discussing a big plan with the AI, dozens of turns in, it finally converges; you switch to another module, come back later — what was said, what was decided, <b>what's still open</b>, all reconstructed by scrolling and memory.</p>
-        <p class="m-after"><span class="yes">✓ With a map:</span>the map is a progress snapshot — the chosen plan is highlighted, tasks carry status, and the branches that never grew are exactly "what we haven't discussed". Switch away, come back, pick up in one glance.</p>
+        <div class="tagline">瞬间一 · 方案收敛之后</div>
+        <h3>「我们聊到哪儿了？」</h3>
+        <p class="m-before"><span class="no">✕ 没有图：</span>和 AI 讨论一个大的方案，几十轮后终于聚焦到一个点；转头开始做其他模块，再回来时——聊过什么、定了什么、<b>哪些还没讨论</b>，只能靠翻记录、靠脑子重建上下文。</p>
+        <p class="m-after"><span class="yes">✓ 有图：</span>图是讨论的进度快照——拍板的方案高亮在图上、任务挂着状态、没长出来的分支就是「还没聊的」。切走再回来，一眼接上。</p>
       </div>
       <div class="card">
-        <div class="tagline">Moment two · exploring an outline</div>
-        <h3>"Where did the other items go?"</h3>
-        <p class="m-before"><span class="no">✕ No map:</span>ask the AI for an outline, pick one item to explore deeply; by the time you want the others, they're long <b>drowned in a hundred turns of scrolling</b>.</p>
-        <p class="m-after"><span class="yes">✓ With a map:</span>every outline item is a node — which one you explored, how far each went, the whole map stays on screen; jump back to any item anytime.</p>
+        <div class="tagline">瞬间二 · 提纲逐项探索</div>
+        <h3>「其余几项去哪了？」</h3>
+        <p class="m-before"><span class="no">✕ 没有图：</span>让 AI 给一份提纲，挑其中一项深入探索；等想回头看其他几项时，它们早已<b>淹没在上百轮聊天的洪流里</b>。</p>
+        <p class="m-after"><span class="yes">✓ 有图：</span>提纲的每一项都自动成为图上节点——探索了哪项、各自进行到什么程度，全图始终在场，随时跳回任意一项继续。</p>
       </div>
     </div>
 
     <div class="grid3">
       <div class="card">
-        <div class="tagline">Why us · 1</div>
-        <h3>Event-level access</h3>
-        <p>Via the Codely hook we get the conversation stream first-hand — file watching doesn't work, and external tools can't even get turn-level updates; event access is a hard dependency of Phase 1 and a moat third parties can't cross.</p>
+        <div class="tagline">为什么是我们 · 1</div>
+        <h3>事件级接入</h3>
+        <p>依托 Codely 的 Hook 拿到「第一手」对话流——文件监听不可行，外挂工具连「轮次级实时」都拿不到；事件级接入是 Phase 1 的硬依赖，也是第三方跨不过去的护城河。</p>
       </div>
       <div class="card">
-        <div class="tagline">Why us · 2</div>
-        <h3>Built-in distribution</h3>
-        <p>Reaches every user through Codely's install & update channel, zero marketing cost; external tools always sit behind an "install" wall.</p>
+        <div class="tagline">为什么是我们 · 2</div>
+        <h3>内置分发</h3>
+        <p>随 Codely 安装与更新触达每个用户，零推广成本；第三方工具永远隔着一道「安装」的墙。</p>
       </div>
       <div class="card">
-        <div class="tagline">Why us · 3</div>
-        <h3>Same-source data loop</h3>
-        <p>The map shares the source with the conversation and file changes; every node links back to the transcript and the code diff — the map isn't drawn, it grows.</p>
+        <div class="tagline">为什么是我们 · 3</div>
+        <h3>数据同源闭环</h3>
+        <p>导图与对话、文件变更同源，每个节点可回链到对话原文与代码改动——图不是「画」出来的，是「长」出来的。</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= Core features ================= -->
+<!-- ================= 核心功能 ================= -->
 <section id="features">
   <div class="container">
     <div class="sec-head">
       <span class="sec-label">Core Features</span>
-      <h2>Core features</h2>
-      <p class="sec-desc">Around the four stages "onboard — grow live — fine-tune — keep". Each feature is tagged with its delivery phase (<b style="color:#2563EB">Phase 1</b> = turn-level live MVP, <b style="color:#8B5CF6">Phase 2</b> = second-level & built-in).</p>
+      <h2>核心功能</h2>
+      <p class="sec-desc">围绕「接入 — 实时生长 — 微调 — 沉淀」四个环节，每个功能标注交付阶段（<b style="color:#2563EB">Phase 1</b> = 轮次级实时 MVP，<b style="color:#8B5CF6">Phase 2</b> = 秒级与内置）。</p>
     </div>
     <div class="grid2x3">
       <div class="feature">
@@ -756,8 +756,8 @@
             <path d="M13.5 8.5 a2 2 0 1 1 -1.2 3.4 l-1.3 1.3 M13.5 8.5 l-1 .1"/>
           </svg>
         </div>
-        <h3>Session parsing <span class="ph ph1">Phase 1</span></h3>
-        <p>Reads local session transcripts (Codely / Codex / Claude formats auto-detected) and, starting from the first message, identifies options, the final choice and its tasks.</p>
+        <h3>会话智能解析 <span class="ph ph1">Phase 1</span></h3>
+        <p>读取本地会话转录（Codely / Codex / Claude 三端格式自动识别），从第一句对话开始识别方案、最终选择与对应任务。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -765,8 +765,8 @@
             <path d="M13 2 L5 13 h5 L9 22 L19 10 h-6 z"/>
           </svg>
         </div>
-        <h3>Live growth · turn-level <span class="ph ph1">Phase 1</span></h3>
-        <p>The map grows live with the conversation: updated automatically within seconds of each turn ending — no waiting for the session to finish, no manual trigger.</p>
+        <h3>实时生长 · 轮次级 <span class="ph ph1">Phase 1</span></h3>
+        <p>导图随对话实时生长：每轮结束数秒内自动更新，无需等会话结束，也无需手动触发。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -774,8 +774,8 @@
             <path d="M21 12 a9 9 0 1 1 -2.6 -6.4"/><path d="M21 4 v5 h-5"/>
           </svg>
         </div>
-        <h3>Second-level incremental sync <span class="ph ph2">Phase 2</span></h3>
-        <p>Fine-grained hook events + incremental parsing — only new turns get parsed; even hundred-turn sessions update in seconds, no lag.</p>
+        <h3>秒级增量同步 <span class="ph ph2">Phase 2</span></h3>
+        <p>细粒度 Hook 事件 + 增量解析，只解析新增轮次；上百轮长会话秒级上图，不卡顿。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -783,8 +783,8 @@
             <path d="M14.5 5.5 l4 4 M4 20 l1.2 -4.2 L15.5 5.5 l4 4 L9.2 19.8 z"/><path d="M13 7 l4 4"/>
           </svg>
         </div>
-        <h3>Editable & annotatable <span class="ph ph2">Phase 2</span></h3>
-        <p>AI-generated nodes support manual adjustment, add/remove and notes; edited nodes are locked — the AI suggests, never overwrites.</p>
+        <h3>可编辑可标注 <span class="ph ph2">Phase 2</span></h3>
+        <p>AI 生成的节点支持手动调整、增删与备注；编辑过的节点加锁，AI 只建议、不覆盖。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -792,8 +792,8 @@
             <path d="M12 15 V4 M8 8 l4 -4 4 4"/><path d="M5 15 v4 h14 v-4"/>
           </svg>
         </div>
-        <h3>Multi-format export <span class="ph ph1">Phase 1</span></h3>
-        <p>Export to PNG / Markdown (SVG / OPML planned) — straight into weekly reports, READMEs and review decks.</p>
+        <h3>多格式导出 <span class="ph ph1">Phase 1</span></h3>
+        <p>导出 PNG / Markdown（SVG / OPML 列入后续规划），直接贴进周报、README 与评审材料。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -801,8 +801,8 @@
             <path d="M12 3 l7 3 v6 c0 4.5 -3 7.5 -7 9 -4 -1.5 -7 -4.5 -7 -9 V6 z"/><path d="M9 11.5 l2 2 4 -4"/>
           </svg>
         </div>
-        <h3>Local first <span class="ph ph1">Phase 1</span></h3>
-        <p>Rendering, storage and export are fully local; parsing shares each CLI's own model link (Codely / Codex / Claude each use their own auth) — no widened exposure, works private.</p>
+        <h3>本地优先 <span class="ph ph1">Phase 1</span></h3>
+        <p>渲染、存储、导出全程本地；解析与对话同一模型链路（Codely / Codex / Claude 各走各的认证），不额外扩大暴露面，可私有化。</p>
       </div>
       <div class="feature" style="grid-column:1/-1">
         <div class="icon-chip">
@@ -810,20 +810,20 @@
             <rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M7 9.5 l3 3 -3 3"/><line x1="12.5" y1="15.5" x2="17" y2="15.5"/>
           </svg>
         </div>
-        <h3>Web terminal in one · TerminalServer <span class="ph ph1">v0.3.0</span></h3>
-        <p>A real terminal (PTY) in the browser; one toolbar switch unfolds the live map panel on the <strong>same page</strong> — session drawer open by default, tap a node for details, drag the splitter to resize; <code>--workspace</code> bootstraps the extension and hooks for a new project in one shot, with data living in the project (<code>&lt;project&gt;/.chatgraphic/</code>). No separate view server — one process reads the same local data.</p>
+        <h3>网页终端一体 · TerminalServer <span class="ph ph1">v0.3.0</span></h3>
+        <p>浏览器里访问真实终端（PTY），工具栏一个开关即在<strong>同页</strong>展开实时导图面板——会话抽屉默认展开、点节点看详情、分隔条拖拽调宽；<code>--workspace</code> 为新项目一键安装扩展并注册 Hook，数据随项目走（<code>&lt;项目&gt;/.chatgraphic/</code>）。无需另跑视图服务，一个进程读同一份本地数据。</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= Tech ================= -->
+<!-- ================= 技术方案 ================= -->
 <section id="tech" class="alt">
   <div class="container">
     <div class="sec-head">
       <span class="sec-label">Inside the Engine</span>
-      <h2>How it's built</h2>
-      <p class="sec-desc">Six key technical decisions — data boundary aligned with Codely, accuracy via tiers & admission line, marginal cost in the open, state from evidence first, incremental challenges stated up front, editing power with the user.</p>
+      <h2>技术方案 · 怎么做到的</h2>
+      <p class="sec-desc">六个关键技术决策——数据边界与 Codely 对齐、准确率靠分级与准入线、成本讲边际量级、状态靠证据优先、增量难点前置亮明、编辑权归用户。</p>
     </div>
     <div class="grid2x3">
       <div class="feature">
@@ -833,8 +833,8 @@
             <path d="M8 16 C11 13.5 13 11.5 15.8 8.8"/>
           </svg>
         </div>
-        <h3>Parsing engine: hook-driven, same link & boundary</h3>
-        <p>Registers each CLI's "turn ended" event (Codely AfterAgent hook / Codex notify / Claude Stop) — minimal deps: one event plus the session payload; the hook only dispatches, parsing runs async, never blocking the chat (MVP: full re-parse, seconds per session; Phase 2 goes incremental). The engine routes by session source (codely -p / codex exec / claude -p), reusing each CLI's own model link and data boundary — no new service, no widened exposure, results merged locally.</p>
+        <h3>解析引擎：Hook 驱动、同链路同边界</h3>
+        <p>注册各端「轮次结束」事件触发解析（Codely AfterAgent Hook / Codex notify / Claude Stop）——最小依赖仅轮次事件与会话载荷，Hook 只投递、解析异步执行、不阻塞对话（MVP 全量重解析，单会话秒级完成；Phase 2 升级增量）；解析引擎按会话来源路由（codely -p / codex exec / claude -p），与对话同一条模型链路、继承其数据边界，不新建服务、不扩大暴露面，结果本地合入。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -842,8 +842,8 @@
             <path d="M4 5 h16 l-6 7 v6 l-4 2 v-8 z"/>
           </svg>
         </div>
-        <h3>Accuracy: confidence tiers + three-question admission</h3>
-        <p>High-confidence content lands on the map directly; anything shaky goes to "to confirm"; content must pass three questions — does it map to an executable task / a reusable decision / a traceable change? If not, it stays off the map, keeping the signal-to-noise high.</p>
+        <h3>准确率：置信分级 + 三问准入</h3>
+        <p>高置信度直接上图，拿不准的进「待确认」；上图内容过三问准入线——是否对应可执行任务 / 可复用决策 / 可追溯变更，都不是则不上图，守住图的信噪比。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -851,8 +851,8 @@
             <path d="M3 13 h4 l2 -6 3 12 2 -6 h7"/>
           </svg>
         </div>
-        <h3>State inference: evidence first, semantics as fallback</h3>
-        <p>"Done" is driven first by real evidence — file changes and executed commands (covers code tasks); research and discussion tasks rely on semantic judgment with the source labeled, never faking evidence.</p>
+        <h3>状态推断：证据优先、语义兜底</h3>
+        <p>「已完成」优先由文件变更与命令执行等真实证据驱动（覆盖代码类任务）；调研、讨论类任务以语义判断并标注来源，不冒充证据。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -860,8 +860,8 @@
             <rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11 V8 a4 4 0 0 1 8 0 v3"/>
           </svg>
         </div>
-        <h3>Data & editing: versioned snapshots, human first</h3>
-        <p>Maps are local JSON project files; every change makes a lightweight snapshot, laying ground for conversation rollback and multi-session merge; user-edited nodes are auto-locked — the map's final say belongs to the human.</p>
+        <h3>数据与编辑权：版本快照、人优先</h3>
+        <p>导图为本地 JSON 工程文件，每次变更生成轻量快照，为对话回退与多会话合并预埋地基；用户编辑过的节点自动加锁——图的最终解释权在人。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -869,8 +869,8 @@
             <path d="M12 3 l9 5 -9 5 -9 -5 z"/><path d="M3 14 l9 5 9 -5"/>
           </svg>
         </div>
-        <h3>Incremental parsing: rolling window + map-state digest <span class="ph ph2">Phase 2 challenge</span></h3>
-        <p>Deduplication over long sessions is the core dilemma: full context costs grow linearly; truncation duplicates nodes. The plan: parsing input = a rolling window of conversation + the current map-state digest, deduping against the map; the MVP collects evaluation samples via full re-parses first.</p>
+        <h3>增量解析：滚动窗口 + 图状态摘要 <span class="ph ph2">Phase 2 难点</span></h3>
+        <p>长会话去重是核心两难：全量上下文成本线性涨，截断则节点重复。对策：解析输入 = 滚动窗口对话 + 当前图状态摘要，去重以图状态对比为准；MVP 先在全量解析中积累评测样本。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -878,127 +878,127 @@
             <path d="M4 10 v4 h3 l5 4 V6 l-5 4 z"/><path d="M16.5 9.5 l5 5 M21.5 9.5 l-5 5"/>
           </svg>
         </div>
-        <h3>Cost: marginal, measured, honest</h3>
-        <p>The MVP re-parses fully per turn — small per-session payload, seconds to finish, bounded cost; Phase 2 incremental parsing (rolling window + map-state digest) cuts it further. Targets: added latency &lt; 2s, parsing tokens &lt; 10% of that turn's conversation, one-switch off, auto-throttle above the line.</p>
+        <h3>成本：边际可控、明码实价</h3>
+        <p>MVP 每轮全量重解析——单会话数据量小、秒级完成，成本有界；Phase 2 增量解析（滚动窗口 + 图状态摘要）进一步降本。目标：附加延迟 &lt; 2s、解析 token &lt; 该轮对话的 10%，可一键关闭，超线自动降频。</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= Flow ================= -->
+<!-- ================= 使用流程 ================= -->
 <section id="flow">
   <div class="container">
     <div class="sec-head">
       <span class="sec-label">How It Works</span>
-      <h2>Four steps to start</h2>
+      <h2>四步上手</h2>
     </div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Onboard a session</h3><p>Install the extension or clone the repo to register the hooks; or use TerminalServer <code>--workspace</code> for a one-shot init.</p></div>
-      <div class="step"><div class="num">2</div><h3>Watch it grow <span class="ph ph1">P1</span></h3><p>The map grows live during the chat (turn-level); second-level arrives in Phase 2.</p></div>
-      <div class="step"><div class="num">3</div><h3>Refine anytime <span class="ph ph2">P2</span></h3><p>Nodes support editing and notes — polish the map into shape.</p></div>
-      <div class="step"><div class="num">4</div><h3>Export & keep</h3><p>Export as image or text into docs, reports and PRs — discussions become assets.</p></div>
+      <div class="step"><div class="num">1</div><h3>接入会话</h3><p>装扩展或克隆仓库注册 Hook；或用 TerminalServer <code>--workspace</code> 一键初始化。</p></div>
+      <div class="step"><div class="num">2</div><h3>实时生长 <span class="ph ph1">P1</span></h3><p>对话进行中导图实时生长（轮次级）；Phase 2 升级秒级。</p></div>
+      <div class="step"><div class="num">3</div><h3>随手微调 <span class="ph ph2">P2</span></h3><p>节点支持编辑与标注，把导图打磨到位。</p></div>
+      <div class="step"><div class="num">4</div><h3>导出沉淀</h3><p>导出成图成文，贴进文档、周报与 PR，讨论成果资产化。</p></div>
     </div>
   </div>
 </section>
 
-<!-- ================= Use cases ================= -->
+<!-- ================= 目标场景 ================= -->
 <section id="scenes" class="alt">
   <div class="container">
     <div class="sec-head">
       <span class="sec-label">Use Cases</span>
-      <h2>Target scenarios</h2>
-      <p class="sec-desc">"Never lose the thread" is served directly by the live form — it's the core hypothesis Phase 1 validates; retrospectives / reporting / archiving are natural extensions of a map that grew live.</p>
+      <h2>目标场景</h2>
+      <p class="sec-desc">「讨论不迷路」由实时形态直接服务，是 Phase 1 要验证的核心假设；复盘 / 汇报 / 沉淀是实时积累的图的自然延伸。</p>
     </div>
     <div class="scenes">
       <div class="scene">
-        <span class="scene-tag" style="background:#EFF6FF;color:#2563EB">Developers</span>
-        <h3>Session retro</h3>
-        <p>After a long chat with the AI, one map shows what was done, what was decided, what's left.</p>
+        <span class="scene-tag" style="background:#EFF6FF;color:#2563EB">开发者</span>
+        <h3>会话复盘</h3>
+        <p>和 AI 长聊之后，一张图看清做了什么、定了什么、还剩什么。</p>
       </div>
       <div class="scene">
-        <span class="scene-tag" style="background:#FFF7ED;color:#D97706">Teams</span>
-        <h3>Plan reporting</h3>
-        <p>Turn the options & conclusions discussed with the AI directly into review and reporting material.</p>
+        <span class="scene-tag" style="background:#FFF7ED;color:#D97706">团队</span>
+        <h3>方案汇报</h3>
+        <p>把与 AI 讨论的方案对比与结论，直接变成评审与汇报材料。</p>
       </div>
       <div class="scene">
-        <span class="scene-tag" style="background:#ECFDF5;color:#16A34A">Personal</span>
-        <h3>Task tracking</h3>
-        <p>Tasks scattered across the conversation become one checkable, trackable map.</p>
+        <span class="scene-tag" style="background:#ECFDF5;color:#16A34A">个人</span>
+        <h3>任务追踪</h3>
+        <p>散落在对话里的任务，变成一张可勾选、可跟踪的导图清单。</p>
       </div>
       <div class="scene">
-        <span class="scene-tag" style="background:#F5F3FF;color:#8B5CF6">Orgs</span>
-        <h3>Knowledge archiving</h3>
-        <p>Plans and decisions flow into the team's docs — people change, discussion results don't get lost.</p>
+        <span class="scene-tag" style="background:#F5F3FF;color:#8B5CF6">组织</span>
+        <h3>知识沉淀</h3>
+        <p>方案与决策进入团队文档库，人可以换，讨论成果不丢。</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= Risks ================= -->
+<!-- ================= 风险与对策 ================= -->
 <section id="risks">
   <div class="container">
     <div class="sec-head">
       <span class="sec-label">Risks</span>
-      <h2>Risks & mitigations</h2>
-      <p class="sec-desc">Ordered by severity; every risk has an explicit fallback and a stop-loss line — no single-point bets.</p>
+      <h2>风险与对策</h2>
+      <p class="sec-desc">按严重程度排列，每个风险都有明确的降级路径与止损线，不赌单点。</p>
     </div>
     <div class="risk-list">
       <div class="risk-item">
-        <div class="r">The core hypothesis fails: nobody looks at the map while chatting<small>the live panel goes unused; people only look after the fact</small></div>
-        <div class="s"><b>Mitigation:</b>behavior instrumentation measures "opened the panel during the conversation" directly; the stop-loss is fixed — if the data doesn't clear the line, degrade to a post-hoc tool and feed the parsing into Codely session summaries; nothing is wasted.</div>
+        <div class="r">核心假设不成立：聊的时候没人看图<small>实时面板无人使用，仅聊后查看</small></div>
+        <div class="s"><b>对策：</b>行为埋点直接度量「对话进行中打开面板」；止损线写死——数据不过线即降级为事后工具，解析与出图能力反哺 Codely 会话摘要，不浪费。</div>
       </div>
       <div class="risk-item">
-        <div class="r">The hook is a hard dependency of Phase 1<small>missing events / thin payloads / flaky stability</small></div>
-        <div class="s"><b>Mitigation:</b>keep the requirements minimal — one event ("turn ended") plus the session payload; confirm availability with the engine team in week one and track as a joint item; if unavailable short-term, validate parsing & map value over a minimal alternative channel first, and wire the live path when the hook lands.</div>
+        <div class="r">Hook 是 Phase 1 硬依赖<small>事件缺失 / 载荷不足 / 稳定性不够</small></div>
+        <div class="s"><b>对策：</b>把对 Hook 的要求降到最低——仅需「轮次结束」一种事件与会话载荷；开工首周与引擎团队确认可用性并列入协作项；若短期不可得，先评估最小替代通道验证解析与图价值，实时随 Hook 就绪补上。</div>
       </div>
       <div class="risk-item">
-        <div class="r">The host builds it themselves<small>Codely shipping its own session summary / outline</small></div>
-        <div class="s"><b>Mitigation:</b>this project is positioned as an incubated feature anyway — proceed via the feature track; align with the engine team: the host does "summaries", we do "structured visualization & archiving", avoiding duplicate work; worst case it merges into the host's roadmap and the work becomes a Codely feature.</div>
+        <div class="r">宿主内建替代<small>Codely 自己做会话摘要 / 大纲</small></div>
+        <div class="s"><b>对策：</b>定位本就是内置能力孵化，按 feature 路径推进；与引擎团队对齐分工——宿主做「摘要」，本项目做「结构化可视化与沉淀」，避免重复建设；最坏情况并入宿主迭代，投入转化为 Codely 功能。</div>
       </div>
       <div class="risk-item">
-        <div class="r">Parsing accuracy below expectations<small>wrong / missed option or task detection</small></div>
-        <div class="s"><b>Mitigation:</b>confidence tiers + the "to confirm" branch as a buffer; Phase 1 builds an evaluation set, and manual corrections feed back into the prompt; worst case it degrades to "semi-auto mind mapping", still better than organizing by hand.</div>
+        <div class="r">解析准确率不达预期<small>方案 / 任务识别错误或漏识别</small></div>
+        <div class="s"><b>对策：</b>置信度分级 + 「待确认」分支兜底；Phase 1 建立解析评测集，人工修正样本反哺优化；最坏退化为「半自动导图」，仍优于手工整理。</div>
       </div>
       <div class="risk-item">
-        <div class="r">Per-turn marginal cost & latency over budget<small>parsing drags the chat / tokens over the line</small></div>
-        <div class="s"><b>Mitigation:</b>the MVP re-parses only at turn end — small payload, seconds, non-blocking; targets: added latency &lt; 2s, parsing tokens &lt; 10% of the turn, auto-throttle above the line, one-switch off.</div>
+        <div class="r">每轮边际成本与延迟超预期<small>解析拖慢对话响应 / token 超线</small></div>
+        <div class="s"><b>对策：</b>MVP 全量重解析仅在轮次结束触发、单会话秒级完成、不阻塞对话；目标附加延迟 &lt; 2s、解析 token &lt; 该轮对话 10%，超线自动降频，支持一键关闭。</div>
       </div>
       <div class="risk-item">
-        <div class="r">Install friction & oversized maps on long sessions<small>users won't bother / node explosion past a hundred turns</small></div>
-        <div class="s"><b>Mitigation:</b>Phase 2 ships as a built-in Codely view via the host's channel; PNG export shares with zero cost; on the canvas side — auto-collapse branches + cluster by task + incremental layout, parsing only new turns.</div>
+        <div class="r">独立安装摩擦大、长会话导图过大<small>用户懒得装 / 上百轮对话节点爆炸</small></div>
+        <div class="s"><b>对策：</b>Phase 2 并入 Codely 内置视图随宿主分发，导出 PNG 零成本分享；画布侧分支自动折叠 + 按任务聚合 + 增量布局，只解析新增轮次。</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= FAQ ================= -->
+<!-- ================= 预判问题 ================= -->
 <section id="faq" class="alt">
   <div class="container">
     <div class="sec-head">
       <span class="sec-label">FAQ</span>
-      <h2>Anticipated questions</h2>
-      <p class="sec-desc">The five questions most likely to come up in a review.</p>
+      <h2>预判问题</h2>
+      <p class="sec-desc">评审现场最可能被问到的五个问题。</p>
     </div>
     <div class="faq">
       <details open>
-        <summary>Q1 · What if parsing gets it wrong? Will the map mislead?</summary>
-        <p>Only high-confidence content lands on the map; everything else waits in the dashed "to confirm" branch; any node can be fixed in one click, and manual corrections continuously retrain the prompt.</p>
+        <summary>Q1 · 解析错了怎么办？导图会误导人吗？</summary>
+        <p>高置信度内容才直接上图，其余进入「待确认」虚线分支等用户确认；节点均可一键修正，人工修正会作为样本持续优化解析。</p>
       </details>
       <details>
-        <summary>Q2 · How much does live parsing cost?</summary>
-        <p>The MVP re-parses fully at each turn end — small payload, seconds, bounded cost, never blocking the chat; Phase 2 goes incremental (rolling window + map-state digest) to cut costs further. Targets: added latency &lt; 2s, parsing tokens &lt; 10% of that turn, one-switch off. v0.1's "zero added cost" was corrected to "marginal, measured, honest".</p>
+        <summary>Q2 · 实时解析的模型成本有多大？</summary>
+        <p>MVP 为每轮结束后的全量重解析——单会话数据量小、秒级完成、成本有界，且不阻塞对话；Phase 2 增量解析（滚动窗口 + 图状态摘要）进一步降本。目标：附加延迟 &lt; 2s、解析 token &lt; 该轮对话的 10%，可一键关闭。v0.1「不新增成本」的表述已修正为「边际可控、明码实价」。</p>
       </details>
       <details>
-        <summary>Q3 · Will it steal attention while I code?</summary>
-        <p>The live panel sits quiet by default and can be closed anytime — positioned as a "rear-view mirror", not a co-driver: no popups, no grabbing the wheel. "Do people look while chatting" is precisely the core hypothesis Phase 1 measures with behavior data — the answer comes from data, not debate.</p>
+        <summary>Q3 · 会不会打扰写代码、抢注意力？</summary>
+        <p>实时面板默认静默常驻、可随时关闭——定位是「后视镜」而非「副驾」，不弹窗、不抢方向盘。「聊的时候会不会看图」本身是 Phase 1 要用行为数据验证的核心假设，答案不靠争论、靠数据。</p>
       </details>
       <details>
-        <summary>Q4 · How is this different from XMind / ProcessOn or session-log tools?</summary>
-        <p>Map tools only draw; log tools only store. ChatGraphic shares the source with the conversation and generates structure automatically, with nodes linking back to the transcript and code changes — none of them do that. The host's own summary feature is a "summary vs structured visualization" division of labor; see the risk table.</p>
+        <summary>Q4 · 和 XMind / ProcessOn、会话记录工具有什么区别？</summary>
+        <p>导图工具只画图、不管对话；记录工具只存档、不生成结构。ChatGraphic 与对话同源、自动生成，节点可回链到原文与代码变更——这是它们都做不到的。宿主自身的会话摘要功能与本产品是「摘要 vs 结构化可视化」的分工关系，详见风险表。</p>
       </details>
       <details>
-        <summary>Q5 · Is my code & conversation data safe?</summary>
-        <p>Rendering, storage and export are fully local; parsing calls the same model link as the CLI itself, under the same data boundary — sessions the CLI can handle are exactly the sessions we can parse, with no widened exposure (v0.1's "data never leaves the machine" was corrected to this wording). Export & sharing support redaction (hide code snippets); the org edition adds permissions and auditing.</p>
+        <summary>Q5 · 代码与对话数据安全吗？</summary>
+        <p>渲染、存储、导出全程本地；解析调用与 Codely 对话同一模型链路、同等数据边界——Codely 能处理的会话即为本产品可解析的会话，不额外扩大暴露面（v0.1「数据不出机器」已修正为此口径）。导出与分享支持脱敏（隐藏代码片段），企业空间版本提供权限与审计。</p>
       </details>
     </div>
   </div>
@@ -1006,13 +1006,13 @@
 
 <footer>
   <div class="container">
-    <span>ChatGraphic · Product Description v0.3 · <a href="https://github.com/weiwei-gu/ChatGraphic" style="color:inherit;text-decoration:underline">github.com/weiwei-gu/ChatGraphic</a></span>
-    <span>UI shown as design mocks (not real screenshots) · 2026-09-17 · v0.3 live-first · updated with the v0.3.0 release · <a href="index.zh-CN.html" style="color:inherit;text-decoration:underline">中文版</a></span>
+    <span>ChatGraphic · 产品描述 v0.3 · <a href="https://github.com/weiwei-gu/ChatGraphic" style="color:inherit;text-decoration:underline">github.com/weiwei-gu/ChatGraphic</a></span>
+    <span>界面为设计示意稿（非真实截图）· 2026-09-17 · v0.3 实时优先 · 已随 v0.3.0 发布更新 · <a href="index.html" style="color:inherit;text-decoration:underline">English</a></span>
   </div>
 </footer>
 
 <script>
-/* Reset the demo animation phase every cycle (at full-dark): child elements' entrance delays re-apply each cycle */
+/* 每轮生长结束（全暗时刻）重置全部演示动画相位：子元素的入场延迟逐周期重新生效 */
 (function(){
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var els = document.querySelectorAll('.mockup-card svg .cg-all, .mockup-card svg .cg-n, .mockup-card svg .cg-e path, .mockup-card svg .cg-le');
