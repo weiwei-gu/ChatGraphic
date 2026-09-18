@@ -82,6 +82,19 @@
   .legend span{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
   .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
 
+  /* ===== Demo video ===== */
+  .demo-video-card{
+    margin-top:38px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;
+    box-shadow:0 24px 60px rgba(15,23,42,.10);
+  }
+  .demo-video-card h3{font-size:18px;font-weight:800;margin-top:8px;letter-spacing:-.2px}
+  .demo-video-card .demo-lead{margin-top:6px;font-size:13.5px;color:var(--muted)}
+  .demo-video-card video{
+    display:block;width:100%;height:auto;border-radius:10px;background:#0F172A;
+    margin-top:16px;border:1px solid #E2E8F0;
+  }
+  .demo-video-card .demo-video-note{margin-top:12px;font-size:13px;color:var(--faint)}
+
   /* ===== Form cards ===== */
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px}
   .card{
@@ -610,6 +623,15 @@
         <span><i style="background:#D97706"></i>决策</span>
         <span><i style="background:#94A3B8"></i>待确认</span>
       </div>
+    </div>
+
+    <!-- 真实运行录屏 -->
+    <div class="demo-video-card" id="demo">
+      <span class="sec-label">Live Demo</span>
+      <h3>真实运行录屏</h3>
+      <p class="demo-lead">设计稿之外的实际效果：ChatDeck 工作台打开终端，在浏览器里跑 <code>codely</code> 聊两轮，左侧会话导图自动生长（中间等待段已加速）。</p>
+      <video controls playsinline preload="metadata" src="assets/demo.mp4"></video>
+      <p class="demo-video-note">▲ 实拍 · v0.3.0 网页终端 + 会话导图一体形态（本地环境录制，约 60 秒）</p>
     </div>
 
     <!-- 形态三要素 -->
