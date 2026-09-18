@@ -29,6 +29,7 @@
 
 - `options`: `[{id, title, state, note, roundRefs, confidence}]`
   - `state`: `"chosen"`（最终选择）/ `"rejected"`（已否决）/ `"candidate"`（仅候选）/ `"warn"`（复议中）
+  - **`chosen` 只在用户明确拍板时使用**（「就用 X」「选 X」「定了」类表达）；用户仅表示「了解 / 关注 / 深入看 X」**不算拍板**，标 `candidate`。若输出含 `chosen`，则不得保留「该选择未确定」类待确认节点（二者矛盾）
   - `note` 如 `"✓ 最终选择"`、`"✕ 已否决 · 移动端受限"`
 - `tasks`: `[{id, title, parent, status, evidence, roundRefs, confidence}]`
   - `parent` = 所属 option 的 id；`status`: `"done"` / `"doing"` / `"todo"`
