@@ -1,70 +1,72 @@
 # ChatGraphic
 
-> 和 AI 对话的同时，看着导图实时生长 —— 三端会话导图（Codely / Codex CLI / Claude Code）· v0.3.0 起内置 TerminalServer 网页终端，终端 + 导图一体
+[English](README.md) | [中文](README.zh-CN.md)
 
-ChatGraphic 是 AI 编程 CLI 的配套可视化工具（当前接入 [Codely](https://codely-docs.tuanjie.cn)、Codex CLI、Claude Code）：**对话进行中**即实时解析——方案、最终选择、任务、决策、文件变更自动长成一张导图，聊完即得图。讨论不迷路，成果可沉淀。三端各自 Hook 触发、各走各的模型链路解析，数据统一本地存储、同一个 viewer 混排查看。v0.3.0 起仓库内置 [TerminalServer](TerminalServer/) 子模块：在浏览器终端里聊，工具栏一个开关即在同页展开实时导图，`--workspace` 还能为新项目一键配好 Codely 扩展环境。
+> Watch your conversation grow into a mind map in real time — session mind maps for three CLIs (Codely / Codex CLI / Claude Code) · v0.3.0 ships with the TerminalServer web terminal: terminal + map side by side
 
-- 在线产品页：<https://weiwei-gu.github.io/ChatGraphic/>（产品描述 v0.3 静态发布）
-- 快速开始：
+ChatGraphic is a companion visualization tool for AI coding CLIs (currently [Codely](https://codely-docs.tuanjie.cn), Codex CLI, and Claude Code): conversations are parsed **while they are happening** — options, the final choice, tasks, decisions, and file changes automatically grow into a single mind map. Finish the chat, get the map. Discussions never lose track, and results are here to stay. Each CLI's hook triggers parsing over its own model link; all data is stored locally and browsed in one shared viewer. Since v0.3.0 the repo ships a [TerminalServer](TerminalServer/) submodule: chat inside the browser terminal, flip one toolbar switch, and the live map unfolds on the same page — `--workspace` even bootstraps the Codely extension environment for a new project in one command.
+
+- Online product page: <https://weiwei-gu.github.io/ChatGraphic/> (product description v0.3, statically published)
+- Quick start:
 
 ```bash
 codely extensions install https://github.com/weiwei-gu/ChatGraphic --scope workspace
-node .codely-cli/extensions/chatgraphic/chatgraphic/install.js     # 注册 Hook（作用域跟随安装：此处为项目级）
+node .codely-cli/extensions/chatgraphic/chatgraphic/install.js     # register hooks (scope follows the install: project-level here)
 ```
 
-`--scope workspace` 把扩展装入**本项目的** `.codely-cli/extensions/`（从最新 Release 拉取）；不加则装入用户目录 `~/.codely-cli/extensions/`（全局共享一份）。查看导图：`node .codely-cli/extensions/chatgraphic/chatgraphic/serve.js`。
+`--scope workspace` installs the extension into **this project's** `.codely-cli/extensions/` (fetched from the latest Release); omit it to install into `~/.codely-cli/extensions/` (one shared copy for all projects). To view the map: `node .codely-cli/extensions/chatgraphic/chatgraphic/serve.js`.
 
-**Codex CLI / Claude Code 用户**（克隆仓库后）：
+**Codex CLI / Claude Code users** (after cloning the repo):
 
 ```bash
-node chatgraphic/install-codex.js    # Codex：写入 ~/.codex/config.toml 的 notify
-node chatgraphic/install-claude.js   # Claude Code：写入 ~/.claude/settings.json 的 hooks.Stop
+node chatgraphic/install-codex.js    # Codex: writes the notify hook into ~/.codex/config.toml
+node chatgraphic/install-claude.js   # Claude Code: writes hooks.Stop into ~/.claude/settings.json
 ```
 
-三端接入与卸载细节见 **[docs/guide.md](docs/guide.md)**。注册作用域：Codely 跟随扩展安装位置（`--scope workspace` 即项目级）；Codex / Claude 当前为用户级全局注册（Codex 实测项目级 notify 不生效；Claude 原生支持项目级 hooks，安装器暂未提供）——对比表见 guide。安装与使用细节（信任机制、数据目录、成本控制）也见 guide。
+See **[docs/guide.md](docs/guide.md)** for the full onboarding & removal details of all three CLIs. Hook scopes: Codely follows the extension install location (`--scope workspace` = project-level); Codex / Claude currently register globally at user level (project-level notify turned out not to work with Codex; Claude supports project-level hooks natively but the installer doesn't offer it yet) — see the comparison table in the guide. Installation and usage details (trust mechanism, data directories, cost control) are also in the guide.
 
-**网页终端一体化**（v0.3.0 起，克隆仓库即可用）：
+**Web terminal integration** (v0.3.0+, works right after cloning):
 
 ```bash
 git clone --recurse-submodules https://github.com/weiwei-gu/ChatGraphic.git
 cd ChatGraphic/TerminalServer
 python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
-./venv/bin/python app.py                                  # 浏览器登录 → 工具栏「会话导图」开关展开面板
-./venv/bin/python app.py --workspace ~/code/某项目        # 给指定项目一键装扩展 + 注册 Hook，终端落在该目录
+./venv/bin/python app.py                                  # open in browser → toggle "Session Map" in the toolbar
+./venv/bin/python app.py --workspace ~/code/some-project  # one-shot extension install + hook registration, terminal lands in that directory
 ```
 
-## 目录介绍
+## Repository layout
 
 ```
-├── ChatGraphic产品描述 v0.3.html   产品描述文档（最新版，本项目的需求源头）
-├── gemini-extension.json          Codely 扩展 manifest（extensions install 入口）
-├── package.json / scripts/        测试与发布脚本（npm test / 版本一致性校验）
-├── .github/workflows/             CI（测试矩阵）与 Release（tag → GitHub Release）
-├── chatgraphic/                   POC 实现（组件细节见 chatgraphic/README.md）
-│   ├── hook.js                    AfterAgent 触发器：去重 / 取代旧解析 / 秒级退出
-│   ├── parser.js                  解析 worker：精简 → 同链路解析（按转录来源路由：Claude→claude -p / Codex→codex exec / 其余→codely -p）→ graph.json（自动增量：图状态+新增轮次）
-│   ├── parse-prompt.md            解析提示词：分型 + 三问准入 + 置信分级
-│   ├── serve.js / viewer.html     本地只读视图服务与导图界面（生长动画 / 回链原文 / 导出）
-│   ├── install.js                 用户级 Hook 注册 / 移除
-│   ├── codex-hook.js              Codex notify 触发器（agent-turn-complete → 同链路解析）
-│   ├── install-codex.js           Codex notify 注册 / 移除（写入 ~/.codex/config.toml）
-│   ├── claude-hook.js              Claude Code Stop Hook 触发器（stdin JSON → 同链路解析）
-│   ├── install-claude.js           Claude Stop Hook 注册 / 移除（写入 ~/.claude/settings.json）
-│   ├── config.json                开关 / 解析模型 / 端口 / 截断上限
-│   └── test/                      58 个离线测试用例（node --test，零依赖）
-├── TerminalServer/               网页终端服务（git submodule）：终端 + 会话导图同页、--workspace 一键初始化（细节见 TerminalServer/README.md）
-└── docs/                          产品页发布副本（index.html = GitHub Pages）+ 详细文档
-    ├── guide.md                   安装与使用指南
-    ├── architecture.md            架构、组件职责与设计要点
-    └── development.md             开发、测试与发布流程
+├── ChatGraphic产品描述 v0.3.html   Product description document (latest, source of requirements; Chinese)
+├── gemini-extension.json          Codely extension manifest (entry point for extensions install)
+├── package.json / scripts/        Test & release scripts (npm test / version consistency check)
+├── .github/workflows/             CI (test matrix) & Release (tag → GitHub Release)
+├── chatgraphic/                   POC implementation (component details in chatgraphic/README.md)
+│   ├── hook.js                    AfterAgent trigger: dedupe / supersede stale parses / fast exit
+│   ├── parser.js                  Parsing worker: lean transcript → same-link parsing (routed by transcript source: Claude→claude -p / Codex→codex exec / others→codely -p) → graph.json (auto incremental: graph state + new turns)
+│   ├── parse-prompt.md            Parsing prompt: node types + three-question admission + confidence tiers
+│   ├── serve.js / viewer.html     Local read-only view server & map UI (grow animations / links back to transcript / export)
+│   ├── install.js                 User-level hook registration / removal
+│   ├── codex-hook.js              Codex notify trigger (agent-turn-complete → same-link parsing)
+│   ├── install-codex.js           Codex notify registration / removal (writes ~/.codex/config.toml)
+│   ├── claude-hook.js             Claude Code Stop hook trigger (stdin JSON → same-link parsing)
+│   ├── install-claude.js          Claude Stop hook registration / removal (writes ~/.claude/settings.json)
+│   ├── config.json                Toggles / parsing model / port / truncation limits
+│   └── test/                      59 offline test cases (node --test, zero dependencies)
+├── TerminalServer/                 Web terminal service (git submodule): terminal + session map on one page, --workspace bootstrap (details in TerminalServer/README.md)
+└── docs/                          Published product page (index.html = GitHub Pages) + long-form docs
+    ├── guide.md                   Installation & usage guide
+    ├── architecture.md            Architecture, component responsibilities, design notes
+    └── development.md             Development, testing & release workflow
 ```
 
-## 文档索引
+## Documentation index
 
-| 文档 | 内容 |
+| Doc | Contents |
 |---|---|
-| [docs/guide.md](docs/guide.md) | 扩展 / 克隆两种安装方式、信任机制、日常使用与复盘 |
-| [docs/architecture.md](docs/architecture.md) | 数据流架构、组件职责、设计要点（三问准入 / 同链路同边界）、路线 |
-| [docs/development.md](docs/development.md) | 测试、CI/CD、发版流程、GitHub Pages 静态发布 |
-| [chatgraphic/README.md](chatgraphic/README.md) | POC 组件细节、成本与控制、故障排查 |
-| [TerminalServer/README.md](TerminalServer/README.md) | 网页终端一体化：会话导图面板、--workspace 一键初始化、可拖拽分隔条 |
+| [docs/guide.md](docs/guide.md) | Extension vs. clone installation, trust mechanism, daily usage & retrospectives |
+| [docs/architecture.md](docs/architecture.md) | Data-flow architecture, component responsibilities, design notes (three-question admission / same link & boundary), roadmap |
+| [docs/development.md](docs/development.md) | Testing, CI/CD, release process, GitHub Pages publishing |
+| [chatgraphic/README.md](chatgraphic/README.md) | POC component details, cost & control, troubleshooting |
+| [TerminalServer/README.md](TerminalServer/README.md) | Web terminal integration: session map panel, --workspace bootstrap, draggable splitter |
