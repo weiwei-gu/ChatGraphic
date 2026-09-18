@@ -467,6 +467,16 @@ function extractJson(text) {
 
 /* ---------- 校验与归一化 ---------- */
 function str(v, max) { v = typeof v === 'string' ? v.trim() : ''; return v.slice(0, max); }
+/* note 专用：触上限时回退到最近的句子边界（。！？；;.!?），找不到再硬切——避免「…微信/抖」式破句 */
+function strSentence(v, max) {
+  const s = str(v, max);
+  if (s.length < max) return s;
+  const cut = Math.max(Math.floor(max / 2), max - 40);
+  for (let i = s.length - 1; i >= cut; i--) {
+    if ('。！？；．.!?;'.includes(s[i])) return s.slice(0, i + 1);
+  }
+  return s;
+}
 function ints(v, maxN) {
   const arr = Array.isArray(v) ? v : [v];
   const out = [];
@@ -500,7 +510,7 @@ function normalize(parsed, roundCount) {
     title: str(o.title, 40) || '未命名方案',
     parent: 'cat-plans',
     state: ['chosen', 'rejected', 'candidate', 'warn'].includes(o.state) ? o.state : 'candidate',
-    note: str(o.note, 80),
+    note: strSentence(o.note, 120),
     roundRefs: refs(o.roundRefs),
     confidence: conf(o.confidence)
   }));
@@ -531,7 +541,7 @@ function normalize(parsed, roundCount) {
     title: str(x.title, 60) || '未命名',
     parent: defParent,
     // note 上限 120：与「1~2 句、写具体信息」规则配套（80 会让两句话被硬切破句）
-    note: str(x.note, 120),
+    note: strSentence(x.note, 120),
     roundRefs: refs(x.roundRefs),
     confidence: conf(x.confidence)
   }));
@@ -569,6 +579,17 @@ function computeGraphDiff(prev, next) {
   (prev || []).forEach(n => { if (!nextMap.has(n.id)) removed++; });
   return { added, removed, updated };
 }
+/* 增量兜底：解析规则只允许凭新增轮次的明确依据删除节点；漏节点多为模型遗漏而非有意删除。
+   把上一版存在、结果中缺失的节点补回，防止 50% 阈值以下静默丢失（真该删的下轮解析会再删）。 */
+function mergeBackMissing(prev, norm) {
+  const byType = { option: 'options', task: 'tasks', decision: 'decisions', file: 'files', question: 'questions' };
+  let rescued = 0;
+  (prev.nodes || []).forEach(p => {
+    const arr = norm[byType[p.type]];
+    if (Array.isArray(arr) && !arr.some(x => x.id === p.id)) { arr.push(p); rescued++; }
+  });
+  return rescued;
+}
 function buildPromptIncremental(lean, prev) {
   const instr = fs.readFileSync(path.join(DIR, 'parse-prompt.md'), 'utf8');
   const summary = JSON.stringify({
@@ -581,8 +602,9 @@ function buildPromptIncremental(lean, prev) {
       roundRefs: n.roundRefs, confidence: n.confidence
     }))
   });
+  const nodeCount = (prev.nodes || []).length;
   let payload = instr
-    + '\n\n===== 当前导图状态（增量模式：以下节点已存在，除新增轮次给出修改依据外必须原样保留）=====\n' + summary
+    + '\n\n===== 当前导图状态（增量模式：以下共 ' + nodeCount + ' 个节点已存在，输出的完整导图中必须一个不少地全部出现且 id 不变——除新增轮次给出修改或删除依据外必须原样保留）=====\n' + summary
     + '\n\n===== 新增轮次（自上次解析以来）=====\n\n' + lean
     + '\n\n执行上述解析任务（增量模式）：基于「当前导图状态」与「新增轮次」，输出更新后的完整导图 JSON（不是 diff，是全量结果）。不要代码围栏，不要任何其他文字。';
   if (payload.length > 90000) payload = payload.slice(0, 90000) + '\n…（截断）';
@@ -592,6 +614,11 @@ function buildPromptIncremental(lean, prev) {
 /* ---------- 组装 graph.json（会话目录内） ---------- */
 function writeGraph(norm, sd, sessionId, roundCount, meta) {
   const version = readVersion(sd) + 1;
+  // 版本快照：写新图前保留上一版为 graph.v{N}.json——补齐产品描述承诺的「每次变更生成轻量快照」，坏解析可回溯
+  try {
+    const cur = path.join(sd, 'graph.json');
+    if (fs.existsSync(cur)) atomicWrite(path.join(sd, 'graph.v' + (version - 1) + '.json'), fs.readFileSync(cur, 'utf8'));
+  } catch (e) { /* 快照失败不阻塞写图 */ }
   const graph = {
     version,
     sessionId,
@@ -696,11 +723,19 @@ async function main() {
         log('parser: [' + sessionId + '] 调用 ' + engineTag + '（' + m + (i > 0 ? ' · 回退' : '') + '）');
         const out = await engineCall(m === 'incremental' ? payloadInc : payloadFull);
         const n2 = normalize(extractJson(out), rounds.length);
-        const nodes = normNodes(n2);
+        let nodes = normNodes(n2);
         if (prevGraph) {
-          const d = computeGraphDiff(prevGraph.nodes, nodes);
-          if (m === 'incremental' && (prevGraph.nodes || []).length > 0 && d.removed > (prevGraph.nodes || []).length * 0.5) {
-            throw new Error('增量结果疑似丢节点（移除 ' + d.removed + '/' + prevGraph.nodes.length + '），回退全量');
+          let d = computeGraphDiff(prevGraph.nodes, nodes);
+          if (m === 'incremental' && (prevGraph.nodes || []).length > 0) {
+            if (d.removed > (prevGraph.nodes || []).length * 0.5) {
+              throw new Error('增量结果疑似丢节点（移除 ' + d.removed + '/' + prevGraph.nodes.length + '），回退全量');
+            }
+            if (d.removed > 0) {
+              const rescued = mergeBackMissing(prevGraph, n2);
+              nodes = normNodes(n2);
+              d = computeGraphDiff(prevGraph.nodes, nodes);
+              log('parser: [' + sessionId + '] 增量漏节点 ' + rescued + ' 个已补回（防静默丢失）');
+            }
           }
           diff = d;
         }
@@ -736,8 +771,8 @@ module.exports = {
   resolveWork, resolveSessionId, loadTranscriptFromRaw, entryRole, entryParts,
   buildRounds, roundBlocks, renderLean, viewRound,
   buildPrompt, buildPromptIncremental, extractJson, normalize, writeGraph,
-  resolveParseMode, computeGraphDiff, normNodes, codexRolloutToHistory, isCodexRollout,
-  claudeTranscriptToHistory, isClaudeTranscript,
+  resolveParseMode, computeGraphDiff, normNodes, mergeBackMissing, strSentence,
+  claudeTranscriptToHistory, isClaudeTranscript, codexRolloutToHistory, isCodexRollout,
   codelyEntryFromDir, resolveCodelySpawn,
   __setConfig, __resetConfig
 };

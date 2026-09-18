@@ -84,6 +84,11 @@ test('writeGraph：写入 parsedRoundCount / parseMode，版本递增，current 
   g = JSON.parse(fs.readFileSync(path.join(sd, 'graph.json'), 'utf8'));
   assert.strictEqual(g.parsedRoundCount, 8);
   assert.strictEqual(g.parseMode, 'full');
+  // 版本快照：写 v2 前应保留 v1 全文
+  assert.ok(fs.existsSync(path.join(sd, 'graph.v1.json')), '写新版前生成上一版快照');
+  const snap = JSON.parse(fs.readFileSync(path.join(sd, 'graph.v1.json'), 'utf8'));
+  assert.strictEqual(snap.version, 1, '快照是第一版');
+  assert.strictEqual(snap.parsedRoundCount, 6, '快照内容为上一版（6 轮）');
 });
 
 /* ---------- 端到端：增量丢节点回退全量（fake codely，跨平台 bin 布局） ---------- */
@@ -178,4 +183,89 @@ test('增量失败回退全量：payload / lean.txt 必须携带完整转录，�
   assert.ok(payload2.includes('第一轮讨论方案甲'), '回退全量 payload 应含历史轮次');
   assert.ok(payload2.includes('第三轮改选方案丙'), '回退全量 payload 应含新增轮次');
   assert.ok(!payload2.includes('===== 当前导图状态'), '全量 payload 不应携带增量专用的图状态段');
+});
+
+/* ---------- 端到端：增量丢少量节点（≤50%）合并兜底 ---------- */
+test('增量丢少量节点：mergeBackMissing 补回、不回退全量（单次引擎调用）', async () => {
+  const sid = 'sess-merge-back';
+  const sd = path.join(HOME, 'work', 'sessions', sid);
+  fs.mkdirSync(sd, { recursive: true });
+  // 上一版：5 节点、已解析 2 轮
+  const prev = {
+    version: 1, sessionId: sid, roundCount: 2, parseMode: 'incremental', parsedRoundCount: 2,
+    goal: '引擎选型', startRound: 1, timeline: [], root: {}, categories: [],
+    nodes: [
+      { id: 'opt-a', type: 'option', title: '方案甲', parent: 'cat-plans', state: 'candidate', note: '甲详情', roundRefs: [1], confidence: 'high' },
+      { id: 'opt-b', type: 'option', title: '方案乙', parent: 'cat-plans', state: 'candidate', note: '乙详情', roundRefs: [2], confidence: 'high' },
+      { id: 'q-c', type: 'question', title: '目标平台?', parent: 'cat-todo', note: '', roundRefs: [2], confidence: 'low' },
+      { id: 'dec-d', type: 'decision', title: '用 TypeScript', parent: 'cat-dec', note: '拍板', roundRefs: [2], confidence: 'high' },
+      { id: 'f-e', type: 'file', title: 'a.ts', parent: 'cat-files', note: '创建', roundRefs: [2], confidence: 'high' }
+    ]
+  };
+  fs.writeFileSync(path.join(sd, 'graph.json'), JSON.stringify(prev, null, 2));
+  fs.writeFileSync(path.join(sd, 'version.txt'), '1');
+
+  // fake codely：一次返回丢 2/5 节点（40%）的结果——若 parser 走合并兜底则不会来第二次调用
+  const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-fakebin-'));
+  const cliDir = path.join(bin, 'node_modules', '@codely', 'cli');
+  fs.mkdirSync(path.join(cliDir, 'bin'), { recursive: true });
+  fs.writeFileSync(path.join(cliDir, 'package.json'), JSON.stringify({ name: '@codely/cli', bin: { codely: 'bin/codely.js' } }));
+  const partial = JSON.stringify({
+    goal: '引擎选型', startRound: 1, timeline: [],
+    options: [
+      { id: 'opt-a', title: '方案甲', state: 'candidate', note: '甲详情更新', roundRefs: [1, 3], confidence: 'high' },
+      { id: 'opt-b', title: '方案乙', state: 'candidate', note: '乙详情', roundRefs: [2], confidence: 'high' },
+      { id: 'opt-new', title: '新方案', state: 'candidate', note: '本轮新增', roundRefs: [3], confidence: 'high' }
+    ],
+    tasks: [], decisions: [{ id: 'dec-d', title: '用 TypeScript', note: '拍板', roundRefs: [2], confidence: 'high' }],
+    files: [], questions: []
+  });
+  const boom = JSON.stringify({ goal: '不该走到这', startRound: 1, timeline: [], options: [], tasks: [], decisions: [], files: [], questions: [] });
+  fs.writeFileSync(path.join(cliDir, 'bin', 'codely.js'), [
+    "'use strict';",
+    'const fs = require("fs"); const path = require("path");',
+    'const dir = path.join(__dirname, "..");',
+    'let n = 0; try { n = JSON.parse(fs.readFileSync(path.join(dir, "counter.json"), "utf8")).n; } catch (e) {}',
+    'n += 1; fs.writeFileSync(path.join(dir, "counter.json"), JSON.stringify({ n }));',
+    'process.stdout.write(n === 1 ? ' + JSON.stringify(partial) + ' : ' + JSON.stringify(boom) + ');'
+  ].join('\n'));
+  if (process.platform !== 'win32') {
+    fs.writeFileSync(path.join(bin, 'codely'), '#!/usr/bin/env node\nrequire("./node_modules/@codely/cli/bin/codely.js");\n');
+    fs.chmodSync(path.join(bin, 'codely'), 0o755);
+  }
+
+  const jsonl = [
+    JSON.stringify({ t: 'header', durableSessionId: sid, seq: 0 }),
+    JSON.stringify({ t: 'put', seq: 1, msg: { id: 'm1', type: 'user', content: '第一轮讨论方案甲' } }),
+    JSON.stringify({ t: 'put', seq: 2, msg: { id: 'm2', type: 'assistant', content: '甲方案介绍' } }),
+    JSON.stringify({ t: 'put', seq: 3, msg: { id: 'm3', type: 'user', content: '第二轮讨论方案乙并拍板 TypeScript' } }),
+    JSON.stringify({ t: 'put', seq: 4, msg: { id: 'm4', type: 'assistant', content: '乙方案介绍' } }),
+    JSON.stringify({ t: 'put', seq: 5, msg: { id: 'm5', type: 'user', content: '第三轮又提出新方案' } }),
+    JSON.stringify({ t: 'put', seq: 6, msg: { id: 'm6', type: 'assistant', content: '新方案介绍' } })
+  ].join('\n');
+  const tr = path.join(HOME, 'mb.jsonl');
+  fs.writeFileSync(tr, jsonl);
+
+  const env = Object.assign({}, process.env, { CHATGRAPHIC_HOME: HOME, PATH: bin + path.delimiter + process.env.PATH });
+  delete env.APPDATA;
+  const parserPath = path.join(__dirname, '..', 'parser.js');
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [parserPath, '--transcript', tr], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    child.stdout.on('data', d => { out += d; });
+    child.stderr.on('data', d => { out += d; });
+    const timer = setTimeout(() => { try { child.kill('SIGKILL'); } catch (e) {} reject(new Error('parser 子进程超时')); }, 60000);
+    child.on('close', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error('parser 退出码 ' + code + '：' + out.slice(-500))); });
+  });
+
+  // 合并兜底生效：一次调用、增量模式、5 旧节点全在（+1 新节点）
+  const calls = JSON.parse(fs.readFileSync(path.join(cliDir, 'counter.json'), 'utf8')).n;
+  assert.strictEqual(calls, 1, '不应回退全量重跑（引擎只被调用 1 次）');
+  const g = JSON.parse(fs.readFileSync(path.join(sd, 'graph.json'), 'utf8'));
+  assert.strictEqual(g.parseMode, 'incremental', '仍为增量结果');
+  const ids = g.nodes.map(n => n.id).sort();
+  assert.deepStrictEqual(ids, ['dec-d', 'f-e', 'opt-a', 'opt-b', 'opt-new', 'q-c'], '缺失的 2 个旧节点被补回');
+  const st = JSON.parse(fs.readFileSync(path.join(sd, 'status.json'), 'utf8'));
+  assert.strictEqual(st.diff.removed, 0, '补回后无移除');
+  assert.strictEqual(st.diff.added, 1, '新方案 1 个新增');
 });
