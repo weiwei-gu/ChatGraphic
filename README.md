@@ -1,8 +1,8 @@
 # ChatGraphic
 
-> 和 AI 对话的同时，看着导图实时生长 —— 支持 Codely / Codex CLI / Claude Code 三端的会话导图
+> 和 AI 对话的同时，看着导图实时生长 —— 三端会话导图（Codely / Codex CLI / Claude Code）· v0.3.0 起内置 TerminalServer 网页终端，终端 + 导图一体
 
-ChatGraphic 是 AI 编程 CLI 的配套可视化工具（当前接入 [Codely](https://codely-docs.tuanjie.cn)、Codex CLI、Claude Code）：**对话进行中**即实时解析——方案、最终选择、任务、决策、文件变更自动长成一张导图，聊完即得图。讨论不迷路，成果可沉淀。三端各自 Hook 触发、各走各的模型链路解析，数据统一本地存储、同一个 viewer 混排查看。
+ChatGraphic 是 AI 编程 CLI 的配套可视化工具（当前接入 [Codely](https://codely-docs.tuanjie.cn)、Codex CLI、Claude Code）：**对话进行中**即实时解析——方案、最终选择、任务、决策、文件变更自动长成一张导图，聊完即得图。讨论不迷路，成果可沉淀。三端各自 Hook 触发、各走各的模型链路解析，数据统一本地存储、同一个 viewer 混排查看。v0.3.0 起仓库内置 [TerminalServer](TerminalServer/) 子模块：在浏览器终端里聊，工具栏一个开关即在同页展开实时导图，`--workspace` 还能为新项目一键配好 Codely 扩展环境。
 
 - 在线产品页：<https://weiwei-gu.github.io/ChatGraphic/>（产品描述 v0.3 静态发布）
 - 快速开始：
@@ -21,9 +21,17 @@ node chatgraphic/install-codex.js    # Codex：写入 ~/.codex/config.toml 的 n
 node chatgraphic/install-claude.js   # Claude Code：写入 ~/.claude/settings.json 的 hooks.Stop
 ```
 
-三端接入与卸载细节见 **[docs/guide.md](docs/guide.md)**。注册作用域：Codely 跟随扩展安装位置（`--scope workspace` 即项目级）；Codex / Claude 当前为用户级全局注册（Codex 实测项目级 notify 不生效；Claude 原生支持项目级 hooks，安装器暂未提供）——对比表见 guide。
+三端接入与卸载细节见 **[docs/guide.md](docs/guide.md)**。注册作用域：Codely 跟随扩展安装位置（`--scope workspace` 即项目级）；Codex / Claude 当前为用户级全局注册（Codex 实测项目级 notify 不生效；Claude 原生支持项目级 hooks，安装器暂未提供）——对比表见 guide。安装与使用细节（信任机制、数据目录、成本控制）也见 guide。
 
-安装与使用细节（信任机制、数据目录、成本控制）见 **[docs/guide.md](docs/guide.md)**。
+**网页终端一体化**（v0.3.0 起，克隆仓库即可用）：
+
+```bash
+git clone --recurse-submodules https://github.com/weiwei-gu/ChatGraphic.git
+cd ChatGraphic/TerminalServer
+python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
+./venv/bin/python app.py                                  # 浏览器登录 → 工具栏「会话导图」开关展开面板
+./venv/bin/python app.py --workspace ~/code/某项目        # 给指定项目一键装扩展 + 注册 Hook，终端落在该目录
+```
 
 ## 目录介绍
 
@@ -44,6 +52,7 @@ node chatgraphic/install-claude.js   # Claude Code：写入 ~/.claude/settings.j
 │   ├── install-claude.js           Claude Stop Hook 注册 / 移除（写入 ~/.claude/settings.json）
 │   ├── config.json                开关 / 解析模型 / 端口 / 截断上限
 │   └── test/                      58 个离线测试用例（node --test，零依赖）
+├── TerminalServer/               网页终端服务（git submodule）：终端 + 会话导图同页、--workspace 一键初始化（细节见 TerminalServer/README.md）
 └── docs/                          产品页发布副本（index.html = GitHub Pages）+ 详细文档
     ├── guide.md                   安装与使用指南
     ├── architecture.md            架构、组件职责与设计要点
@@ -58,3 +67,4 @@ node chatgraphic/install-claude.js   # Claude Code：写入 ~/.claude/settings.j
 | [docs/architecture.md](docs/architecture.md) | 数据流架构、组件职责、设计要点（三问准入 / 同链路同边界）、路线 |
 | [docs/development.md](docs/development.md) | 测试、CI/CD、发版流程、GitHub Pages 静态发布 |
 | [chatgraphic/README.md](chatgraphic/README.md) | POC 组件细节、成本与控制、故障排查 |
+| [TerminalServer/README.md](TerminalServer/README.md) | 网页终端一体化：会话导图面板、--workspace 一键初始化、可拖拽分隔条 |

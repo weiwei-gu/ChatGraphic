@@ -19,6 +19,7 @@ chatgraphic/parser.js          ← 转录归一化（三端格式容错）→ �
    ▼
 work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 → 版本递增
    │  serve.js（本地只读服务，2s 轮询）
+   │  或 TerminalServer 面板（v0.3.0：Flask 复刻数据路由直读同一数据目录，viewer 以 ?embed=1 内嵌于网页终端，凭登录 cookie 鉴权）
    ▼
 浏览器 viewer                  ← 导图实时生长 / 三端会话混排切换 / 节点回链对话原文 / 导出 PNG、Markdown
 ```
@@ -40,6 +41,7 @@ work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 �
 | `install.js` | Codely Hook 注册 / 移除（作用域跟随安装位置：workspace → 项目级 `$CODELY_PROJECT_DIR` 锚定；用户级 → `~/.codely-cli/settings.json`） |
 | `install-codex.js` | Codex notify 注册 / 移除（`~/.codex/config.toml` 顶层键插到首个表头前；他人占用不覆盖） |
 | `install-claude.js` | Claude Stop Hook 注册 / 移除（`~/.claude/settings.json` hooks 数组并存追加） |
+| `TerminalServer/`（submodule） | 网页终端一体化展示端：浏览器真实终端（PTY + xterm.js）+ 工具栏开关内嵌 viewer；Flask 数据路由复刻 serve.js 直读数据目录（cookie 鉴权）；`--workspace` 一键初始化项目（装扩展 + 注册 Hook）。见 [TerminalServer/README.md](../TerminalServer/README.md) |
 
 ## 设计要点
 
@@ -48,6 +50,7 @@ work/sessions/<会话id>/graph.json   ← 分型 + 三问准入 + 置信分级 �
 - **三问准入 / 置信分级**：内容须是可执行任务 / 可复用决策 / 可追溯变更才上图；低置信进「待确认」
 - **证据优先**：任务状态由文件变更、命令执行等真实证据驱动，语义推断会标注来源
 - **多窗口 / 多项目共存**：每会话独立 `work/sessions/<id>/`，serve 端口自动避让
+- **展示端双通道**（v0.3.0 起）：`serve.js` 或 TerminalServer 面板共用同一数据目录，均只读、全程本地，数据目录规则一致
 - **一键关闭**：`chatgraphic/config.json` 中 `enabled: false`，Hook 立即静默跳过
 
 ## 状态与路线

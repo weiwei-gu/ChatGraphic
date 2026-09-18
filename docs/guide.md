@@ -55,6 +55,23 @@ node chatgraphic/serve.js       # 启动导图视图（自动打开 http://local
 
 > 历史说明：仓库曾内置项目级 Hook（`.codely-cli/settings.json`），现已统一为 `install.js` 注册（按安装/克隆位置判定作用域），避免与扩展方式双重触发；克隆用户与扩展用户走同一注册机制。
 
+## TerminalServer 网页终端一体化（v0.3.0 起）
+
+本仓库内置 TerminalServer 子模块：浏览器里访问真实终端，聊天的同时工具栏点「**会话导图**」开关，即可在**同一页面**展开实时导图面板（可拖拽分隔条调宽；面板内嵌 viewer 的 embed 模式——会话抽屉默认展开、点节点弹详情、点空白收起）——**无需另跑 serve.js**，Flask 直接读数据目录。
+
+```bash
+git clone --recurse-submodules https://github.com/weiwei-gu/ChatGraphic.git
+cd ChatGraphic/TerminalServer
+python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
+
+./venv/bin/python app.py --port 5001                    # 浏览器登录 → 终端 + 「会话导图」开关
+./venv/bin/python app.py --workspace ~/code/某项目      # 一键初始化：装扩展 + 注册项目级 Hook，终端落在该目录
+```
+
+- **数据目录自动跟随**：项目内有 `chatgraphic/work`（clone 布局）读它，否则读项目级扩展数据目录 `<项目>/.chatgraphic`（见开头数据目录规则）；显式 `--chatgraph-work` / `CHATGRAPHIC_HOME` 始终优先
+- `--workspace` 初始化幂等、可重复启动；项目信任（`/hooks trust-project`）仍需在该项目 Codely 会话里人工执行一次
+- 组件细节与全部参数见 [TerminalServer/README.md](../TerminalServer/README.md)
+
 ## Codex CLI 接入（实验）
 
 Codex 在每轮结束（`agent-turn-complete`）时经 `notify` 机制触发外部程序：
