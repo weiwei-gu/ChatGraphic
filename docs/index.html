@@ -271,25 +271,27 @@
       <a href="#risks">风险与对策</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <span class="header-date">2026-09-15</span>
+    <span class="header-date">2026-09-17</span>
   </div>
 </header>
 
 <!-- ================= HERO ================= -->
 <div class="hero">
   <div class="container">
-    <span class="eyebrow">会话导图 · Codely 配套可视化工具</span>
+    <span class="eyebrow">三端会话导图 · 终端 + 导图一体</span>
     <h1>和 AI 对话的同时，<em>看着导图实时生长</em></h1>
     <p class="hero-sub">
-      <strong>ChatGraphic</strong> 是 Codely 的配套可视化工具：
+      <strong>ChatGraphic</strong> 把 AI 编程 CLI 的对话实时长成导图：
       对话<strong>进行中</strong>即实时解析——从<strong>第一句对话</strong>到<strong>方案、最终选择与对应任务</strong>，
       导图随讨论同步生长，聊完即得图。讨论不迷路，成果可沉淀。
-      实时以<strong>轮次级</strong>起步（每轮结束数秒内更新），秒级在 Phase 2 做实。
+      已接入 <strong>Codely / Codex CLI / Claude Code</strong> 三端；<strong>v0.3.0</strong> 起内置 TerminalServer 网页终端——
+      在浏览器终端里聊，一个开关即在<strong>同页</strong>展开实时导图。
     </p>
     <div class="hero-tags">
+      <span>三端接入 · Codely / Codex CLI / Claude Code</span>
       <span>对话中实时生成 · 轮次级起步</span>
-      <span>Hook 驱动 · 轮次结束即触发</span>
-      <span>渲染与存储全程本地 · 解析与 Codely 同数据边界</span>
+      <span>网页终端一体 · 开关即展开（v0.3.0）</span>
+      <span>渲染与存储全程本地 · 解析与对话同数据边界</span>
       <span>导出 PNG / Markdown</span>
     </div>
     <div class="hero-actions">
@@ -620,7 +622,7 @@
         </div>
         <div class="tagline">入口 · Hook 事件驱动</div>
         <h3>挂上 Hook 即实时</h3>
-        <p>安装时注册 Codely 的「轮次结束」Hook，运行 <code>chatgraphic watch</code> 接收事件并触发解析——对话一开始导图就实时生长（轮次级）；更细粒度事件与秒级在 Phase 2。</p>
+        <p>注册各端的「轮次结束」事件（Codely AfterAgent Hook / Codex notify / Claude Stop），轮次结束自动触发解析——对话一开始导图就实时生长（轮次级）；更细粒度事件与秒级在 Phase 2。</p>
       </div>
       <div class="card">
         <div class="icon-chip">
@@ -732,7 +734,7 @@
           </svg>
         </div>
         <h3>会话智能解析 <span class="ph ph1">Phase 1</span></h3>
-        <p>读取 Codely 的本地会话，从第一句对话开始识别方案、最终选择与对应任务。</p>
+        <p>读取本地会话转录（Codely / Codex / Claude 三端格式自动识别），从第一句对话开始识别方案、最终选择与对应任务。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -741,7 +743,7 @@
           </svg>
         </div>
         <h3>实时生长 · 轮次级 <span class="ph ph1">Phase 1</span></h3>
-        <p>运行 watch 后导图随对话实时生长：每轮结束数秒内更新，无需等会话结束，也无需手动触发。</p>
+        <p>导图随对话实时生长：每轮结束数秒内自动更新，无需等会话结束，也无需手动触发。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -768,7 +770,7 @@
           </svg>
         </div>
         <h3>多格式导出 <span class="ph ph1">Phase 1</span></h3>
-        <p>PNG / SVG / Markdown / OPML，直接贴进周报、README 与评审材料。</p>
+        <p>导出 PNG / Markdown（SVG / OPML 列入后续规划），直接贴进周报、README 与评审材料。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -777,7 +779,16 @@
           </svg>
         </div>
         <h3>本地优先 <span class="ph ph1">Phase 1</span></h3>
-        <p>渲染、存储、导出全程本地；解析与 Codely 同数据边界，不额外扩大暴露面，离线可用，可私有化。</p>
+        <p>渲染、存储、导出全程本地；解析与对话同一模型链路（Codely / Codex / Claude 各走各的认证），不额外扩大暴露面，可私有化。</p>
+      </div>
+      <div class="feature" style="grid-column:1/-1">
+        <div class="icon-chip">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M7 9.5 l3 3 -3 3"/><line x1="12.5" y1="15.5" x2="17" y2="15.5"/>
+          </svg>
+        </div>
+        <h3>网页终端一体 · TerminalServer <span class="ph ph1">v0.3.0</span></h3>
+        <p>浏览器里访问真实终端（PTY），工具栏一个开关即在<strong>同页</strong>展开实时导图面板——会话抽屉默认展开、点节点看详情、分隔条拖拽调宽；<code>--workspace</code> 为新项目一键安装扩展并注册 Hook，数据随项目走（<code>&lt;项目&gt;/.chatgraphic/</code>）。无需另跑视图服务，一个进程读同一份本地数据。</p>
       </div>
     </div>
   </div>
@@ -800,7 +811,7 @@
           </svg>
         </div>
         <h3>解析引擎：Hook 驱动、同链路同边界</h3>
-        <p>注册 Codely「轮次结束」Hook 触发解析——最小依赖仅此一种事件与会话载荷，Hook 只投递、解析异步执行、不阻塞对话（MVP 全量重解析，单会话秒级完成；Phase 2 升级增量）；解析与 Codely 对话同一条模型链路，继承其数据边界，不新建服务、不扩大暴露面，结果本地合入。</p>
+        <p>注册各端「轮次结束」事件触发解析（Codely AfterAgent Hook / Codex notify / Claude Stop）——最小依赖仅轮次事件与会话载荷，Hook 只投递、解析异步执行、不阻塞对话（MVP 全量重解析，单会话秒级完成；Phase 2 升级增量）；解析引擎按会话来源路由（codely -p / codex exec / claude -p），与对话同一条模型链路、继承其数据边界，不新建服务、不扩大暴露面，结果本地合入。</p>
       </div>
       <div class="feature">
         <div class="icon-chip">
@@ -859,7 +870,7 @@
       <h2>四步上手</h2>
     </div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>接入会话</h3><p>安装时注册 Codely Hook，运行 watch 即实时接入。</p></div>
+      <div class="step"><div class="num">1</div><h3>接入会话</h3><p>装扩展或克隆仓库注册 Hook；或用 TerminalServer <code>--workspace</code> 一键初始化。</p></div>
       <div class="step"><div class="num">2</div><h3>实时生长 <span class="ph ph1">P1</span></h3><p>对话进行中导图实时生长（轮次级）；Phase 2 升级秒级。</p></div>
       <div class="step"><div class="num">3</div><h3>随手微调 <span class="ph ph2">P2</span></h3><p>节点支持编辑与标注，把导图打磨到位。</p></div>
       <div class="step"><div class="num">4</div><h3>导出沉淀</h3><p>导出成图成文，贴进文档、周报与 PR，讨论成果资产化。</p></div>
@@ -973,7 +984,7 @@
 <footer>
   <div class="container">
     <span>ChatGraphic · 产品描述 v0.3 · <a href="https://github.com/weiwei-gu/ChatGraphic" style="color:inherit;text-decoration:underline">github.com/weiwei-gu/ChatGraphic</a></span>
-    <span>界面为设计示意稿（非真实截图）· 2026-09-15 · v0.3 实时优先</span>
+    <span>界面为设计示意稿（非真实截图）· 2026-09-17 · v0.3 实时优先 · 已随 v0.3.0 发布更新</span>
   </div>
 </footer>
 
