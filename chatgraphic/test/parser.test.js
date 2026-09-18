@@ -206,3 +206,33 @@ test('resolveWork：CHATGRAPHIC_HOME > 扩展态（user ~/.chatgraphic / workspa
     delete process.env.CHATGRAPHIC_HOME;
   }
 });
+
+/* ---------- 记忆完整性兜底（v0.3.1） ---------- */
+test('strSentence：未触限原样；触限回退到句子边界；无边界保底硬切', () => {
+  const short = 'C# 组件化开发，跨 25+ 平台。';
+  assert.strictEqual(P.strSentence(short, 120), short, '未触限原样返回');
+  const long = 'Unity 是跨平台引擎，支持导出 25+ 平台，全球过半手游出自 Unity；短板是画面上限不如 UE5，版本迭代快偶有坑，长句还会继续延伸到上限处被截断';
+  const cut = P.strSentence(long, 60);
+  assert.ok(cut.length <= 60, '不超过上限');
+  assert.ok('。！？；．.!?;'.includes(cut[cut.length - 1]), '截断点应落在句子边界：' + cut);
+  const noPunct = 'A'.repeat(200);
+  assert.strictEqual(P.strSentence(noPunct, 60), 'A'.repeat(60), '找不到边界时保底硬切');
+});
+
+test('mergeBackMissing：缺失节点按类型补回，计数正确，已有节点不动', () => {
+  const prev = { nodes: [
+    { id: 'opt-a', type: 'option', title: '甲', note: 'x', roundRefs: [1], confidence: 'high' },
+    { id: 'opt-b', type: 'option', title: '乙', note: 'y', roundRefs: [2], confidence: 'high' },
+    { id: 'q-c', type: 'question', title: '丙?', note: '', roundRefs: [2], confidence: 'low' }
+  ] };
+  const norm = {
+    options: [{ id: 'opt-a', title: '甲', note: '甲更新', roundRefs: [1, 3], confidence: 'high' }],
+    tasks: [], decisions: [], files: [], questions: []
+  };
+  const rescued = P.mergeBackMissing(prev, norm);
+  assert.strictEqual(rescued, 2, '补回 opt-b 与 q-c');
+  assert.ok(norm.options.some(n => n.id === 'opt-b'), 'opt-b 补回 options');
+  assert.ok(norm.questions.some(n => n.id === 'q-c'), 'q-c 补回 questions');
+  assert.strictEqual(norm.options.find(n => n.id === 'opt-a').note, '甲更新', '既有节点不被覆盖');
+  assert.strictEqual(P.mergeBackMissing({ nodes: [] }, norm), 0, '无缺失时计数为 0');
+});

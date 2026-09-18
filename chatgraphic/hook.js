@@ -91,6 +91,8 @@ function main() {
       if (pid && pid !== process.pid) {
         try { process.kill(-pid, 'SIGKILL'); } catch (e) { try { process.kill(pid, 'SIGKILL'); } catch (e2) {} }
         log('hook: [' + sessionId + '] 终止未完成的旧解析 pid=' + pid);
+        // 被杀的解析不会走收尾：把 running 状态标记为中断，viewer 不会永久挂着「解析中」
+        try { atomicWrite(path.join(sd, 'status.json'), JSON.stringify({ state: 'interrupted', finishedAt: new Date().toISOString(), reason: 'superseded' }, null, 1)); } catch (e3) {}
       }
     } catch (e) { /* 无旧进程或已退出 */ }
 
