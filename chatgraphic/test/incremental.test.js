@@ -5,6 +5,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawn } = require('child_process');
 
 /* 必须在 require parser 之前设置：parser 在模块加载时解析 WORK 目录 */
 const HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-inc-'));
@@ -83,4 +84,98 @@ test('writeGraph：写入 parsedRoundCount / parseMode，版本递增，current 
   g = JSON.parse(fs.readFileSync(path.join(sd, 'graph.json'), 'utf8'));
   assert.strictEqual(g.parsedRoundCount, 8);
   assert.strictEqual(g.parseMode, 'full');
+});
+
+/* ---------- 端到端：增量丢节点回退全量（fake codely，跨平台 bin 布局） ---------- */
+test('增量失败回退全量：payload / lean.txt 必须携带完整转录，历史轮次不得丢失', async () => {
+  const sid = 'sess-fallback';
+  const sd = path.join(HOME, 'work', 'sessions', sid);
+  fs.mkdirSync(sd, { recursive: true });
+  // 上一版图：2 方案、已解析 2 轮；新转录 3 轮 → 增量模式
+  const prev = {
+    version: 1, sessionId: sid, roundCount: 2, parseMode: 'incremental', parsedRoundCount: 2,
+    goal: '引擎选型', startRound: 1, timeline: [], root: {}, categories: [],
+    nodes: [
+      { id: 'opt-a', type: 'option', title: '方案甲', parent: 'cat-plans', state: 'candidate', note: '甲详情', roundRefs: [1], confidence: 'high' },
+      { id: 'opt-b', type: 'option', title: '方案乙', parent: 'cat-plans', state: 'candidate', note: '乙详情', roundRefs: [2], confidence: 'high' }
+    ]
+  };
+  fs.writeFileSync(path.join(sd, 'graph.json'), JSON.stringify(prev, null, 2));
+  fs.writeFileSync(path.join(sd, 'version.txt'), '1'); // readVersion 从 version.txt 起算，须与 prev 一致
+
+  // fake codely：第 1 次（增量）返回丢节点 JSON 触发回退，之后（全量）返回完整图；每次调用落盘收到的 payload
+  const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-fakebin-'));
+  const cliDir = path.join(bin, 'node_modules', '@codely', 'cli');
+  fs.mkdirSync(path.join(cliDir, 'bin'), { recursive: true });
+  fs.writeFileSync(path.join(cliDir, 'package.json'), JSON.stringify({ name: '@codely/cli', bin: { codely: 'bin/codely.js' } }));
+  const bad = JSON.stringify({
+    goal: '引擎选型', startRound: 3, timeline: [],
+    options: [{ id: 'opt-x', title: '错乱节点', state: 'candidate', note: '', roundRefs: [3], confidence: 'low' }],
+    tasks: [], decisions: [], files: [], questions: []
+  });
+  const good = JSON.stringify({
+    goal: '引擎选型', startRound: 1, timeline: [{ round: 3, text: '改选方案丙' }],
+    options: [
+      { id: 'opt-a', title: '方案甲', state: 'candidate', note: '甲详情', roundRefs: [1], confidence: 'high' },
+      { id: 'opt-b', title: '方案乙', state: 'candidate', note: '乙详情', roundRefs: [2], confidence: 'high' },
+      { id: 'opt-c', title: '方案丙', state: 'chosen', note: '丙敲定', roundRefs: [3], confidence: 'high' }
+    ],
+    tasks: [], decisions: [], files: [], questions: []
+  });
+  fs.writeFileSync(path.join(cliDir, 'bin', 'codely.js'), [
+    "'use strict';",
+    'const fs = require("fs"); const path = require("path");',
+    'const dir = path.join(__dirname, "..");',
+    'let n = 0; try { n = JSON.parse(fs.readFileSync(path.join(dir, "counter.json"), "utf8")).n; } catch (e) {}',
+    'n += 1; fs.writeFileSync(path.join(dir, "counter.json"), JSON.stringify({ n }));',
+    'const ai = process.argv.indexOf("-p");',
+    'fs.writeFileSync(path.join(dir, "payload-" + n + ".txt"), ai > -1 ? process.argv[ai + 1] : "");',
+    'process.stdout.write(n === 1 ? ' + JSON.stringify(bad) + ' : ' + JSON.stringify(good) + ');'
+  ].join('\n'));
+  // POSIX 直接 spawn('codely')，需 PATH 内可执行 shim；Windows 走 resolveCodelySpawn 的标准 npm 布局
+  if (process.platform !== 'win32') {
+    fs.writeFileSync(path.join(bin, 'codely'), '#!/usr/bin/env node\nrequire("./node_modules/@codely/cli/bin/codely.js");\n');
+    fs.chmodSync(path.join(bin, 'codely'), 0o755);
+  }
+
+  const jsonl = [
+    JSON.stringify({ t: 'header', durableSessionId: sid, seq: 0 }),
+    JSON.stringify({ t: 'put', seq: 1, msg: { id: 'm1', type: 'user', content: '第一轮讨论方案甲，甲很全面' } }),
+    JSON.stringify({ t: 'put', seq: 2, msg: { id: 'm2', type: 'assistant', content: '甲方案介绍' } }),
+    JSON.stringify({ t: 'put', seq: 3, msg: { id: 'm3', type: 'user', content: '第二轮讨论方案乙' } }),
+    JSON.stringify({ t: 'put', seq: 4, msg: { id: 'm4', type: 'assistant', content: '乙方案介绍' } }),
+    JSON.stringify({ t: 'put', seq: 5, msg: { id: 'm5', type: 'user', content: '第三轮改选方案丙' } }),
+    JSON.stringify({ t: 'put', seq: 6, msg: { id: 'm6', type: 'assistant', content: '丙方案敲定' } })
+  ].join('\n');
+  const tr = path.join(HOME, 'fb.jsonl');
+  fs.writeFileSync(tr, jsonl);
+
+  const env = Object.assign({}, process.env, { CHATGRAPHIC_HOME: HOME, PATH: bin + path.delimiter + process.env.PATH });
+  delete env.APPDATA; // Windows 下避免 resolveCodelySpawn 先命中 APPDATA/npm 里的真实 codely
+  const parserPath = path.join(__dirname, '..', 'parser.js');
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [parserPath, '--transcript', tr], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    child.stdout.on('data', d => { out += d; });
+    child.stderr.on('data', d => { out += d; });
+    const timer = setTimeout(() => { try { child.kill('SIGKILL'); } catch (e) {} reject(new Error('parser 子进程超时')); }, 60000);
+    child.on('close', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error('parser 退出码 ' + code + '：' + out.slice(-500))); });
+  });
+
+  // 回退全量被采用：图 = 全量结果（既有节点不丢）
+  const g = JSON.parse(fs.readFileSync(path.join(sd, 'graph.json'), 'utf8'));
+  assert.strictEqual(g.parseMode, 'full', '增量丢节点后应回退全量');
+  assert.strictEqual(g.version, 2, '版本递增');
+  assert.deepStrictEqual(g.nodes.map(n => n.id).sort(), ['opt-a', 'opt-b', 'opt-c'], '全量结果应含全部节点');
+
+  // 回归点 1：lean.txt 记录实际发送的输入 —— 回退后必须换成完整转录，不能只剩新增轮次
+  const lean = fs.readFileSync(path.join(sd, 'lean.txt'), 'utf8');
+  assert.ok(lean.includes('第一轮讨论方案甲'), 'lean.txt 应含历史轮次（回退后为完整转录）');
+  assert.ok(lean.includes('第三轮改选方案丙'), 'lean.txt 应含新增轮次');
+
+  // 回归点 2：第 2 次引擎调用（回退全量）收到的 payload 必须含全部轮次 —— 修复前只有新增轮次
+  const payload2 = fs.readFileSync(path.join(cliDir, 'payload-2.txt'), 'utf8');
+  assert.ok(payload2.includes('第一轮讨论方案甲'), '回退全量 payload 应含历史轮次');
+  assert.ok(payload2.includes('第三轮改选方案丙'), '回退全量 payload 应含新增轮次');
+  assert.ok(!payload2.includes('===== 当前导图状态'), '全量 payload 不应携带增量专用的图状态段');
 });
